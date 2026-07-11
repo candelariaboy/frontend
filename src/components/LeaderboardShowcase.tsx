@@ -20,7 +20,6 @@ function PodiumItem({
 }) {
   return (
     <div className={`podium__front ${className}`} style={{ height } as CSSProperties}>
-      <div className="podium__surface" aria-hidden="true" />
       <div className="podium__number">{rank}</div>
       {entry ? (
         <>
@@ -46,9 +45,9 @@ export default function LeaderboardShowcase({ entries, error }: LeaderboardShowc
 
       <div className="podium-container">
         <div className="podium">
-          <PodiumItem entry={podiumEntries[1]} className="podium__left podium__silver" rank={2} height="180px" />
-          <PodiumItem entry={podiumEntries[0]} className="podium__center podium__gold" rank={1} height="230px" />
-          <PodiumItem entry={podiumEntries[2]} className="podium__right podium__bronze" rank={3} height="170px" />
+          <PodiumItem entry={podiumEntries[1]} className="podium__left" rank={2} height="160px" />
+          <PodiumItem entry={podiumEntries[0]} className="podium__center" rank={1} height="190px" />
+          <PodiumItem entry={podiumEntries[2]} className="podium__right" rank={3} height="140px" />
         </div>
       </div>
 
