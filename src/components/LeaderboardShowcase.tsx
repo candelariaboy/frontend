@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react"
+
 import type { LeaderboardEntry } from "../types"
 import "./LeaderboardShowcase.css"
 
