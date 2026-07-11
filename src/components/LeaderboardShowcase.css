@@ -136,7 +136,7 @@
 
 .podium__image {
   position: absolute; top:0%; left:50%;
-  transform: translate(-50%, -75%) translatez(-55px) rotatey(0);
+  transform: translate(-50%, -98%) translatez(-55px) rotatey(0);
   transform-style: preserve-3d;
   transform-origin: center;
   width: calc(var(--_podium-size) * 10);
@@ -171,7 +171,7 @@
 }
 .podium__image::after {
   content: "";
-  position: absolute; bottom:0; left:0;
+  position: absolute; bottom: calc(var(--_podium-size) * -2.8); left:0;
   width:100%; height: calc(var(--_podium-size) * 6);
   border-radius:100%;
   filter: blur(20px);
