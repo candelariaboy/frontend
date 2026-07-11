@@ -5,18 +5,20 @@ import "./LeaderboardShowcase.css"
 type LeaderboardShowcaseProps = {
   entries: LeaderboardEntry[]
   error: string
+
+type LeaderboardShowcaseProps = {
+  entries: LeaderboardEntry[]
+  error: string
 }
 
 function PodiumItem({
   entry,
   className,
   rank,
-  height,
 }: {
   entry?: LeaderboardEntry
   className: string
   rank: number
-  height: string
 }) {
   const title = entry?.username ?? "No entry"
   const program = entry?.program || "Program not set"
@@ -25,7 +27,7 @@ function PodiumItem({
   const initials = getInitials(title)
 
   return (
-    <div className={`podium__front ${className}`} style={{ height } as CSSProperties}>
+    <div className={`podium__front ${className}`}>
       <div className="podium__surface" aria-hidden="true" />
       <div className="podium__image">
         {entry ? <img src={entry.avatarUrl} alt={entry.username} /> : <div className="podium__avatar-fallback">{initials}</div>}
@@ -83,9 +85,9 @@ export default function LeaderboardShowcase({ entries, error }: LeaderboardShowc
           </div>
 
           <div className="podium">
-            <PodiumItem entry={podiumEntries[1]} className="podium__left podium__silver" rank={2} height="160px" />
-            <PodiumItem entry={podiumEntries[0]} className="podium__center podium__gold" rank={1} height="190px" />
-            <PodiumItem entry={podiumEntries[2]} className="podium__right podium__bronze" rank={3} height="140px" />
+            <PodiumItem entry={podiumEntries[1]} className="podium__left podium__silver" rank={2} />
+            <PodiumItem entry={podiumEntries[0]} className="podium__center podium__gold" rank={1} />
+            <PodiumItem entry={podiumEntries[2]} className="podium__right podium__bronze" rank={3} />
           </div>
         </div>
 
