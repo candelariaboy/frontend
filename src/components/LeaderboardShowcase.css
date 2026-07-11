@@ -111,19 +111,27 @@
   transform-origin: top;
   transform: rotatex(-90deg);
 }
-.podium__left::before, .podium__right::before {
+.podium__left::before {
   transform-style: preserve-3d;
   content: "";
   position: absolute; top:0; left:0;
-  width:100%; height:100%;
-  transform-origin: right;
-  transform: rotatey(-90deg);
+  width: 500px; height:100%;
+  transform-origin: left;
+  transform: rotateY(90deg);
+  background: linear-gradient(to right, #7C8898, transparent);
 }
-.podium__right::before { transform-origin:left; transform: rotatey(90deg); }
+.podium__right::before {
+  transform-style: preserve-3d;
+  content: "";
+  position: absolute; top:0; right:0;
+  width: 500px; height:100%;
+  transform-origin: right;
+  transform: rotateY(-90deg);
+  background: linear-gradient(to left, #8C4A1E, transparent);
+}
 
 /* silver - rank 2 */
 .podium__left { padding-top: calc(var(--_podium-size) * 3); background: linear-gradient(160deg, #EDF2F6, #B9C4D1); }
-.podium__left::before{ background: linear-gradient(to left, #7C8898, transparent); }
 .podium__left::after { background: linear-gradient(#B9C4D1, transparent); }
 .podium__left .rank-num{ color:#2C3543; }
 
