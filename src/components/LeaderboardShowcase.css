@@ -5,19 +5,19 @@
   color: #eeeeee;
   font-family: "Inter", sans-serif;
   box-sizing: border-box;
-  padding: 0;
+  padding: 84px 20px 100px;
 }
 
 .podium-header {
   position: relative;
   z-index: 2;
-  margin-bottom: 1.75rem;
+  margin-bottom: 2.5rem;
   text-align: center;
   animation: dropIn 0.6s ease-out both;
 }
 
 .podium-header__eyebrow {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   color: #4a5568;
   font-size: 14px;
   font-weight: 700;
@@ -39,7 +39,7 @@
   --_podium-size: 4px;
   display: grid;
   place-items: center;
-  margin-top: calc(var(--_podium-size) * 20);
+  margin-top: 168px;
   perspective: calc(var(--_podium-size) * 50);
   overflow: visible;
 }
@@ -90,6 +90,7 @@
 }
 
 .podium__front::after {
+  transform-style: preserve-3d;
   content: "";
   position: absolute;
   top: 0;
@@ -97,12 +98,17 @@
   width: 100%;
   height: 100%;
   transform-origin: top;
-  transform: rotateX(-90deg);
-  transform-style: preserve-3d;
+  transform: rotatex(-90deg);
+}
+
+.podium__left,
+.podium__right {
+  position: relative;
 }
 
 .podium__left::before,
 .podium__right::before {
+  transform-style: preserve-3d;
   content: "";
   position: absolute;
   top: 0;
@@ -110,15 +116,12 @@
   width: 100%;
   height: 100%;
   transform-origin: right;
-  transform: rotateY(-90deg);
-  transform-style: preserve-3d;
-  background: linear-gradient(to left, #394c0c, transparent);
+  transform: rotatey(-90deg);
 }
 
 .podium__right::before {
   transform-origin: left;
-  transform: rotateY(90deg);
-  background: linear-gradient(to right, #394c0c, transparent);
+  transform: rotatey(90deg);
 }
 
 .podium__left {
@@ -128,6 +131,10 @@
 
 .podium__left::after {
   background: linear-gradient(#b9c4d1, transparent);
+}
+
+.podium__left .rank-num {
+  color: #2c3543;
 }
 
 .podium__center {
@@ -140,6 +147,10 @@
   background: linear-gradient(#f5b93e, transparent);
 }
 
+.podium__center .rank-num {
+  color: #4a2e00;
+}
+
 .podium__right {
   padding-top: calc(var(--_podium-size) * 1);
   background: linear-gradient(160deg, #f3b27f, #d67d3f);
@@ -149,48 +160,39 @@
   background: linear-gradient(#d67d3f, transparent);
 }
 
-.rank-num {
-  font-size: calc(var(--_podium-size) * 12);
-  line-height: 1;
-  color: #1f2937;
-}
-
-.podium__center .rank-num {
-  color: #4a2e00;
-}
-
-.podium__left .rank-num {
-  color: #2c3543;
-}
-
 .podium__right .rank-num {
   color: #3e1f08;
 }
 
+.rank-num {
+  font-size: calc(var(--_podium-size) * 12);
+  line-height: 1;
+}
+
 .podium__image {
   position: absolute;
-  top: 0;
+  top: 0%;
   left: 50%;
-  width: calc(var(--_podium-size) * 10);
-  transform: translate(-50%, -80%) translateZ(-55px) rotateY(0);
+  transform: translate(-50%, -102%) translatez(-55px) rotatey(0);
   transform-style: preserve-3d;
   transform-origin: center;
+  width: calc(var(--_podium-size) * 10);
 }
 
 .podium__image .avatar {
-  position: relative;
-  display: flex;
   width: calc(var(--_podium-size) * 10);
   height: calc(var(--_podium-size) * 10);
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  border: 3px solid #0a0e1b;
-  border-radius: 50%;
-  color: #fff;
   font-family: "Space Grotesk", sans-serif;
-  font-size: calc(var(--_podium-size) * 3.2);
   font-weight: 700;
+  font-size: calc(var(--_podium-size) * 3.2);
+  color: #fff;
+  border: 3px solid #0a0e1b;
+  position: relative;
+  overflow: hidden;
 }
 
 .podium__image .avatar img {
@@ -199,53 +201,70 @@
   object-fit: cover;
 }
 
-.podium__left .podium__image .avatar {
-  background: linear-gradient(135deg, #4c5a78, #2f3a54);
-}
-
 .podium__center .podium__image .avatar {
   background: linear-gradient(135deg, #8b6bff, #5b3ee8);
   box-shadow: 0 0 0 5px rgba(139, 107, 255, 0.22);
+}
+
+.podium__left .podium__image .avatar {
+  background: linear-gradient(135deg, #4c5a78, #2f3a54);
 }
 
 .podium__right .podium__image .avatar {
   background: linear-gradient(135deg, #8c5a32, #5e3a1e);
 }
 
+.crown {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 0 6px rgba(245, 185, 62, 0.7));
+}
+
 .podium__image::after {
   content: "";
   position: absolute;
-  bottom: 0;
+  bottom: calc(var(--_podium-size) * -3);
   left: 0;
   width: 100%;
   height: calc(var(--_podium-size) * 6);
   border-radius: 100%;
-  transform: rotateX(90deg);
-  background: linear-gradient(#0e1303, transparent);
   filter: blur(20px);
+  background: linear-gradient(#000, transparent);
+  transform: rotatex(90deg);
+  opacity: 0.5;
 }
 
 .podium__front:hover > .podium__image {
   animation: rotate 10s linear infinite;
 }
 
+@keyframes rotate {
+  to {
+    transform: translate(-50%, -75%) translateZ(-55px) rotateY(360deg);
+  }
+}
+
 .info {
-  margin-top: calc(var(--_podium-size) * 5);
   font-family: "Inter", sans-serif;
+  margin-top: calc(var(--_podium-size) * 5);
 }
 
 .info .name {
-  color: #1a1a1a;
   font-size: 16px;
   font-weight: 700;
+  color: #1a1a1a;
   white-space: nowrap;
 }
 
 .info .meta {
-  margin-top: 2px;
-  color: rgba(0, 0, 0, 0.6);
   font-size: 11px;
   font-weight: 600;
+  color: rgba(0, 0, 0, 0.6);
+  margin-top: 2px;
   white-space: nowrap;
 }
 
@@ -254,12 +273,12 @@
   align-items: center;
   gap: 5px;
   margin-top: 9px;
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.06);
-  padding: 5px 13px;
-  color: #1a1a1a;
   font-size: 12px;
   font-weight: 700;
+  padding: 5px 13px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #1a1a1a;
 }
 
 .info .xp svg {
@@ -268,27 +287,20 @@
   stroke: #1a1a1a;
 }
 
-.podium-empty-state {
-  margin-top: 24px;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 14px;
-  text-align: center;
-}
-
-@keyframes rotate {
-  to {
-    transform: translate(-50%, -80%) translateZ(-55px) rotateY(360deg);
-  }
-}
-
 @keyframes dropIn {
   from {
     opacity: 0;
     transform: translateY(-14px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.podium-empty-state {
+  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+  text-align: center;
 }
