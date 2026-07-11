@@ -43,7 +43,7 @@ function PodiumItem({
     <div className={`podium__front ${className}`}>
       <div className="podium__image">
         {rank === 1 && (
-          <svg className="crown" viewBox="0 0 24 24" fill="#F5B93E">
+          <svg className="crown" viewBox="0 0 24 24" fill="#F5B93E" aria-hidden="true">
             <path d="M3 8l4 3 5-6 5 6 4-3-2 11H5L3 8z" />
           </svg>
         )}
@@ -54,7 +54,7 @@ function PodiumItem({
       <div className="rank-num">{rank}</div>
       <div className="info">
         <div className="name">{title}</div>
-        <div className="meta">{program} · {year}</div>
+        <div className="meta">{program} - {year}</div>
         <div className="xp">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M13 2 4 14h6l-1 8 9-12h-6z" />
