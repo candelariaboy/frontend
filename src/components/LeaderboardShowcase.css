@@ -113,22 +113,27 @@
   transform-origin: top;
   transform: rotatex(-90deg);
 }
-/* Side walls removed to eliminate sharp glitches on the outer edges */
-
 /* silver - rank 2 */
 .podium__left { padding-top: calc(var(--_podium-size) * 3); background: linear-gradient(160deg, #EDF2F6, #B9C4D1); }
+.podium__left::before,
+.podium__center::before,
+.podium__right::before {
+  content: none;
+  background: none;
+  width: 0;
+  height: 0;
+  transform: none;
+}
 .podium__left::after { background: linear-gradient(#B9C4D1, transparent); }
 .podium__left .rank-num{ color:#2C3543; }
 
 /* gold - rank 1 */
 .podium__center { padding-top: calc(var(--_podium-size) * 5); background: linear-gradient(160deg, #FFE29A, #F5B93E); box-shadow: 0 -10px 50px rgba(245,185,62,0.35); }
-.podium__center::before{ background: linear-gradient(to left, #C9820A, transparent); }
 .podium__center::after { background: linear-gradient(#F5B93E, transparent); }
 .podium__center .rank-num{ color:#4A2E00; }
 
 /* bronze - rank 3 */
 .podium__right { padding-top: calc(var(--_podium-size) * 1); background: linear-gradient(160deg, #F3B27F, #D67D3F); }
-.podium__right::before{ background: linear-gradient(to right, #8C4A1E, transparent); }
 .podium__right::after { background: linear-gradient(#D67D3F, transparent); }
 .podium__right .rank-num{ color:#3E1F08; }
 
