@@ -52,7 +52,7 @@ function PodiumItem({
         </div>
       </div>
       <div className="rank-num">{rank}</div>
-      <div className="info" style={{ visibility: entry ? "visible" : "hidden" }}>
+      <div className="info">
         <div className="name">{title}</div>
         <div className="meta">{program} · {year}</div>
         <div className="xp">
