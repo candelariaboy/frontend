@@ -411,6 +411,14 @@ export async function fetchLeaderboard() {
     runway_xp: number
     runway_remaining_xp: number
     delta: string
+    badge_count?: number
+    badge_stack?: Array<{
+      label: string
+      rarity: string
+      medal_icon?: string | null
+      achieved?: boolean
+      claimed?: boolean
+    }>
   }>
   return data.map((entry) => ({
     id: String(entry.id),
@@ -423,6 +431,16 @@ export async function fetchLeaderboard() {
     runwayXp: entry.runway_xp,
     runwayRemainingXp: entry.runway_remaining_xp,
     delta: entry.delta,
+    badgeCount: Number(entry.badge_count || 0),
+    badgeStack: Array.isArray(entry.badge_stack)
+      ? entry.badge_stack.map((badge) => ({
+          label: String(badge.label || ""),
+          rarity: String(badge.rarity || "common"),
+          medalIcon: badge.medal_icon || undefined,
+          achieved: Boolean(badge.achieved),
+          claimed: Boolean(badge.claimed),
+        }))
+      : [],
   }))
 }
 

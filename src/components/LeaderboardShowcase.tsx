@@ -9,6 +9,20 @@ type LeaderboardShowcaseProps = {
   scopeLabel: string
 }
 
+function BadgeStack({ badges, rank }: { badges: LeaderboardEntry["badgeStack"]; rank: number }) {
+  const maxVisible = rank === 1 ? 7 : rank === 2 ? 5 : 4
+  const visibleBadges = badges.slice(0, maxVisible)
+  return (
+    <div className="podium-badge-stack" aria-label={`${visibleBadges.length} badges`}>
+      {visibleBadges.map((badge, index) => (
+        <span key={`${badge.label}-${index}`} className={`podium-badge podium-badge-${rank}`}>
+          {badge.medalIcon || badge.label.slice(0, 1).toUpperCase()}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function PodiumCard({
   entry,
   rank,
@@ -44,23 +58,25 @@ function PodiumCard({
         whileHover={{ y: -10, rotateX: 2 }}
         className="podium-card"
       >
-      <div className="podium-orbit" aria-hidden="true" />
-      <div className="podium-avatar">
-        <img src={entry.avatarUrl} alt={entry.username} className="podium-avatar-image" />
-      </div>
-
-      <div className={`podium-block ${accentClass}`} style={blockStyle}>
-        <div className="podium-top" aria-hidden="true" />
-        <div className="podium-front" aria-hidden="true" />
-
-        <div className="podium-copy">
-          <div className="podium-rank">{rank}</div>
-          <h3 className="podium-username">{entry.username}</h3>
-          <p className="podium-meta">{entry.program || "Program not set"}</p>
-          <p className="podium-meta">{entry.yearLevel || "Year level not set"}</p>
-          <p className="podium-xp">{Number(entry.xp || 0).toLocaleString()} XP</p>
+        <div className="podium-orbit" aria-hidden="true" />
+        <div className="podium-avatar">
+          <img src={entry.avatarUrl} alt={entry.username} className="podium-avatar-image" />
         </div>
-      </div>
+
+        <BadgeStack badges={entry.badgeStack} rank={rank} />
+
+        <div className={`podium-block ${accentClass}`} style={blockStyle}>
+          <div className="podium-top" aria-hidden="true" />
+          <div className="podium-front" aria-hidden="true" />
+
+          <div className="podium-copy">
+            <div className="podium-rank">{rank}</div>
+            <h3 className="podium-username">{entry.username}</h3>
+            <p className="podium-meta">{entry.program || "Program not set"}</p>
+            <p className="podium-meta">{entry.yearLevel || "Year level not set"}</p>
+            <p className="podium-xp">{Number(entry.xp || 0).toLocaleString()} XP</p>
+          </div>
+        </div>
       </motion.div>
     </div>
   )
@@ -68,7 +84,6 @@ function PodiumCard({
 
 export default function LeaderboardShowcase({ entries, error, scopeLabel }: LeaderboardShowcaseProps) {
   const podiumEntries = entries.slice(0, 3)
-  const restEntries = entries.slice(3)
   const secondPlace = podiumEntries[1]
   const firstPlace = podiumEntries[0]
   const thirdPlace = podiumEntries[2]
@@ -136,39 +151,6 @@ export default function LeaderboardShowcase({ entries, error, scopeLabel }: Lead
 
       {entries.length === 0 ? (
         <div className="leaderboard-empty">{error || "No leaderboard data yet."}</div>
-      ) : null}
-
-      {restEntries.length > 0 ? (
-        <div className="leaderboard-rest">
-          <div className="leaderboard-rest-header">
-            <div>
-              <p className="leaderboard-rest-title">More rankings</p>
-              <p className="leaderboard-rest-subtitle">The podium stays in front while the rest remain visible below.</p>
-            </div>
-            <div className="leaderboard-rest-count">{restEntries.length} more</div>
-          </div>
-
-          <div className="leaderboard-rest-list">
-            {restEntries.map((entry, index) => (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.35, delay: index * 0.03 }}
-                className="leaderboard-rest-item"
-              >
-                <span className="leaderboard-rest-rank">#{index + 4}</span>
-                <img src={entry.avatarUrl} alt={entry.username} className="leaderboard-rest-avatar" />
-                <div className="leaderboard-rest-copy">
-                  <p className="leaderboard-rest-name">{entry.username}</p>
-                  <p className="leaderboard-rest-meta">{entry.program || "Program not set"}</p>
-                </div>
-                <div className="leaderboard-rest-xp">{Number(entry.xp || 0).toLocaleString()} XP</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
       ) : null}
     </section>
   )

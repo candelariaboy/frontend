@@ -76,6 +76,14 @@ export type LeaderboardEntry = {
   runwayXp: number
   runwayRemainingXp: number
   delta: string
+  badgeCount: number
+  badgeStack: Array<{
+    label: string
+    rarity: string
+    medalIcon?: string | null
+    achieved: boolean
+    claimed: boolean
+  }>
 }
 
 export type LearningPathStep = {
