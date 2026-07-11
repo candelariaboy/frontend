@@ -5,10 +5,6 @@ import "./LeaderboardShowcase.css"
 type LeaderboardShowcaseProps = {
   entries: LeaderboardEntry[]
   error: string
-
-type LeaderboardShowcaseProps = {
-  entries: LeaderboardEntry[]
-  error: string
 }
 
 function PodiumItem({
