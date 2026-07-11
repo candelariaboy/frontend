@@ -76,8 +76,8 @@ export type LeaderboardEntry = {
   runwayXp: number
   runwayRemainingXp: number
   delta: string
-  badgeCount: number
-  badgeStack: Array<{
+  badgeCount?: number
+  badgeStack?: Array<{
     label: string
     rarity: string
     medalIcon?: string | null
