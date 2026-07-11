@@ -6,7 +6,6 @@ import "./LeaderboardShowcase.css"
 type LeaderboardShowcaseProps = {
   entries: LeaderboardEntry[]
   error: string
-  scopeLabel: string
 }
 
 function PodiumBlock({
@@ -39,7 +38,7 @@ function PodiumBlock({
   )
 }
 
-export default function LeaderboardShowcase({ entries, error, scopeLabel }: LeaderboardShowcaseProps) {
+export default function LeaderboardShowcase({ entries, error }: LeaderboardShowcaseProps) {
   const podiumEntries = entries.slice(0, 3)
   const secondPlace = podiumEntries[1]
   const firstPlace = podiumEntries[0]
