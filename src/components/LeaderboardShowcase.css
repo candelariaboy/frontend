@@ -103,6 +103,7 @@
 .podium__center { transform: translate3d(0, 0, 5px); }
 .podium__center:hover { transform: translate3d(0, 0, 20px); }
 
+
 .podium__front::after {
   transform-style: preserve-3d;
   content: "";
@@ -112,24 +113,7 @@
   transform-origin: top;
   transform: rotatex(-90deg);
 }
-.podium__left::before {
-  transform-style: preserve-3d;
-  content: "";
-  position: absolute; top:0; left:0;
-  width: 100%; height:100%;
-  transform-origin: left;
-  transform: rotateY(90deg);
-  background: linear-gradient(to right, #7C8898, transparent);
-}
-.podium__right::before {
-  transform-style: preserve-3d;
-  content: "";
-  position: absolute; top:0; right:0;
-  width: 100%; height:100%;
-  transform-origin: right;
-  transform: rotateY(-90deg);
-  background: linear-gradient(to left, #8C4A1E, transparent);
-}
+/* Side walls removed to eliminate sharp glitches on the outer edges */
 
 /* silver - rank 2 */
 .podium__left { padding-top: calc(var(--_podium-size) * 3); background: linear-gradient(160deg, #EDF2F6, #B9C4D1); }
@@ -152,7 +136,7 @@
 
 .podium__image {
   position: absolute; top:0%; left:50%;
-  transform: translate(-50%, -100%) translatez(-55px) rotatey(0);
+  transform: translate(-50%, -102%) translatez(-55px) rotatey(0);
   transform-style: preserve-3d;
   transform-origin: center;
   width: calc(var(--_podium-size) * 10);
