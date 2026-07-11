@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Roboto+Mono&family=Syne+Mono&display=swap");
-
 .podium-page {
   min-height: 100%;
   padding: 0;
@@ -55,11 +53,6 @@
   transform-style: preserve-3d;
   transform-origin: top;
   transition: transform 0.25s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  overflow: visible;
 }
 
 .podium__front:hover {
@@ -124,20 +117,6 @@
   background: #90c020;
 }
 
-.podium__center::before {
-  transform-style: preserve-3d;
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transform-origin: right;
-  transform: rotateY(-90deg);
-  background: #394c0c;
-  background: linear-gradient(to left, #394c0c, transparent);
-}
-
 .podium__center::after {
   background: #81ac1c;
   background: linear-gradient(#90c020, transparent);
@@ -196,45 +175,18 @@
   }
 }
 
-/* Rank number */
-.podium__number {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: clamp(2.8rem, 7vw, 4.8rem);
-  font-weight: 900;
-  line-height: 1;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  margin-top: 20px;
-}
-
-/* Name, program, year, xp */
+/* Custom additions for user data */
 .podium__name {
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  color: white;
   white-space: nowrap;
-  margin-top: 16px;
-}
-
-.podium__program,
-.podium__year {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 10px;
-  font-weight: 700;
-  white-space: nowrap;
-  margin-top: 4px;
-}
-
-.podium__xp {
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.22);
-  padding: 3px 10px;
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  white-space: nowrap;
-  margin-top: 8px;
+  font-weight: 600;
+  font-family: "Inter", sans-serif;
+  letter-spacing: 0.05em;
 }
 
 .podium-empty-state {
