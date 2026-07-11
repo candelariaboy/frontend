@@ -9,76 +9,33 @@ type LeaderboardShowcaseProps = {
   scopeLabel: string
 }
 
-function BadgeStack({ badges, rank }: { badges: LeaderboardEntry["badgeStack"]; rank: number }) {
-  const maxVisible = rank === 1 ? 7 : rank === 2 ? 5 : 4
-  const visibleBadges = badges.slice(0, maxVisible)
-  return (
-    <div className="podium-badge-stack" aria-label={`${visibleBadges.length} badges`}>
-      {visibleBadges.map((badge, index) => (
-        <span key={`${badge.label}-${index}`} className={`podium-badge podium-badge-${rank}`}>
-          {badge.medalIcon || badge.label.slice(0, 1).toUpperCase()}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-function PodiumCard({
-  entry,
+function PodiumBlock({
   rank,
-  accent,
-  heightClass,
-  blockHeight,
-  delay,
+  className,
+  style,
+  entry,
 }: {
-  entry: LeaderboardEntry
   rank: number
-  accent: "gold" | "silver" | "bronze"
-  heightClass: string
-  blockHeight: string
-  delay: number
+  className: string
+  style: CSSProperties
+  entry?: LeaderboardEntry
 }) {
-  const accentClass =
-    accent === "gold"
-      ? "podium-gold"
-      : accent === "silver"
-        ? "podium-silver"
-        : "podium-bronze"
-
-  const blockStyle = {
-    "--podium-height": blockHeight,
-  } as CSSProperties
-
   return (
-    <div className={`podium-shell ${heightClass}`}>
-      <motion.div
-        initial={{ opacity: 0, y: 28 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, delay }}
-        whileHover={{ y: -10, rotateX: 2 }}
-        className="podium-card"
-      >
-        <div className="podium-orbit" aria-hidden="true" />
-        <div className="podium-avatar">
-          <img src={entry.avatarUrl} alt={entry.username} className="podium-avatar-image" />
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      whileHover={{ y: -8 }}
+      className={`podium__front ${className}`}
+      style={style}
+    >
+      <div className="podium__number">{rank}</div>
+      {entry ? (
+        <div className="podium__label" title={entry.username}>
+          {entry.username}
         </div>
-
-        <BadgeStack badges={entry.badgeStack} rank={rank} />
-
-        <div className={`podium-block ${accentClass}`} style={blockStyle}>
-          <div className="podium-top" aria-hidden="true" />
-          <div className="podium-front" aria-hidden="true" />
-
-          <div className="podium-copy">
-            <div className="podium-rank">{rank}</div>
-            <h3 className="podium-username">{entry.username}</h3>
-            <p className="podium-meta">{entry.program || "Program not set"}</p>
-            <p className="podium-meta">{entry.yearLevel || "Year level not set"}</p>
-            <p className="podium-xp">{Number(entry.xp || 0).toLocaleString()} XP</p>
-          </div>
-        </div>
-      </motion.div>
-    </div>
+      ) : null}
+    </motion.div>
   )
 }
 
@@ -89,69 +46,33 @@ export default function LeaderboardShowcase({ entries, error, scopeLabel }: Lead
   const thirdPlace = podiumEntries[2]
 
   return (
-    <section className="leaderboard-stage">
-      <div className="leaderboard-header">
-        <div>
-          <p className="leaderboard-kicker">{scopeLabel}</p>
-          <h1 className="leaderboard-title">Top 3</h1>
-          <p className="leaderboard-description">
-            Podium view of the highest ranked students, styled after the 3D reference you shared.
-          </p>
-        </div>
+    <section className="podium-page">
+      <h1 className="podium-page__title">Top 3</h1>
 
-        <div className="leaderboard-chip-list">
-          <span className="leaderboard-chip">Live ranking</span>
-          <span className="leaderboard-chip">Gold / Silver / Bronze</span>
-          <span className="leaderboard-chip">{entries.length} students</span>
-        </div>
-      </div>
-
-      <div className="podium-scene">
-        <div className="podium-grid">
-          {secondPlace ? (
-            <PodiumCard
-              entry={secondPlace}
-              rank={2}
-              accent="silver"
-              heightClass="podium-card-silver"
-              blockHeight="178px"
-              delay={0.12}
-            />
-          ) : (
-            <div className="podium-empty" />
-          )}
-
-          {firstPlace ? (
-            <PodiumCard
-              entry={firstPlace}
-              rank={1}
-              accent="gold"
-              heightClass="podium-card-gold"
-              blockHeight="226px"
-              delay={0.06}
-            />
-          ) : (
-            <div className="podium-empty" />
-          )}
-
-          {thirdPlace ? (
-            <PodiumCard
-              entry={thirdPlace}
-              rank={3}
-              accent="bronze"
-              heightClass="podium-card-bronze"
-              blockHeight="160px"
-              delay={0.18}
-            />
-          ) : (
-            <div className="podium-empty" />
-          )}
+      <div className="podium-container">
+        <div className="podium">
+          <PodiumBlock
+            rank={2}
+            className="podium__left"
+            style={{ height: "160px" }}
+            entry={secondPlace}
+          />
+          <PodiumBlock
+            rank={1}
+            className="podium__center"
+            style={{ height: "190px" }}
+            entry={firstPlace}
+          />
+          <PodiumBlock
+            rank={3}
+            className="podium__right"
+            style={{ height: "140px" }}
+            entry={thirdPlace}
+          />
         </div>
       </div>
 
-      {entries.length === 0 ? (
-        <div className="leaderboard-empty">{error || "No leaderboard data yet."}</div>
-      ) : null}
+      {entries.length === 0 ? <div className="podium-empty-state">{error || "No leaderboard data yet."}</div> : null}
     </section>
   )
 }
