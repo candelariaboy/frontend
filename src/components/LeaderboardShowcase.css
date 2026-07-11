@@ -1,19 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
 
 .podium-page {
-  position: relative;
-  overflow: hidden;
   min-height: 100%;
-  border-radius: 28px;
-  padding: 12px 18px 24px;
+  padding: 0;
   background: #131313;
+  color: #eeeeee;
   font-family: "Inter", sans-serif;
 }
 
 .podium-page__title {
-  margin: 0 0 16px;
-  color: #f3f3f3;
-  font-size: clamp(3rem, 8vw, 5.6rem);
+  margin: 0;
+  font-size: clamp(3.4rem, 9vw, 6.1rem);
   font-weight: 900;
   line-height: 0.9;
   letter-spacing: -0.08em;
@@ -21,10 +18,10 @@
 }
 
 .podium-container {
-  --_podium-size: 8px;
-  margin-top: calc(var(--_podium-size) * 15);
+  --_podium-size: 4px;
   display: grid;
   place-items: center;
+  margin-top: calc(var(--_podium-size) * 20);
   perspective: calc(var(--_podium-size) * 50);
 }
 
@@ -33,23 +30,25 @@
   align-items: end;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  transform-style: preserve-3d;
   transform: rotateX(-40deg);
+  transform-style: preserve-3d;
+  text-align: center;
   font-size: calc(var(--_podium-size) * 12);
   font-weight: 900;
-  text-align: center;
 }
 
 .podium__front {
   position: relative;
-  transform-style: preserve-3d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   transform-origin: top;
-  overflow: hidden;
-  border: 0;
+  transform-style: preserve-3d;
+  overflow: visible;
   padding-inline: calc(var(--_podium-size) * 5);
   padding-bottom: calc(var(--_podium-size) * 3);
-  transition: transform 0.25s ease, filter 0.25s ease;
-  cursor: default;
+  transition: transform 0.25s ease;
 }
 
 .podium__front:hover {
@@ -60,9 +59,14 @@
   content: "";
   position: absolute;
   inset: 0;
-  transform-style: preserve-3d;
-  transform-origin: top;
   transform: rotateX(-90deg);
+  transform-origin: top;
+  transform-style: preserve-3d;
+}
+
+.podium__left,
+.podium__right {
+  position: relative;
 }
 
 .podium__left::before,
@@ -73,31 +77,33 @@
   left: 0;
   width: 100%;
   height: 100%;
-  transform-style: preserve-3d;
-  transform-origin: right;
   transform: rotateY(-90deg);
-  background: linear-gradient(to left, rgba(70, 94, 15, 0.98), transparent);
+  transform-origin: right;
+  transform-style: preserve-3d;
+  background: linear-gradient(to left, #394c0c, transparent);
 }
 
 .podium__right::before {
-  transform-origin: left;
+  left: auto;
+  right: 0;
   transform: rotateY(90deg);
-  background: linear-gradient(to right, rgba(70, 94, 15, 0.98), transparent);
+  transform-origin: left;
+  background: linear-gradient(to right, #394c0c, transparent);
 }
 
 .podium__left {
   padding-top: calc(var(--_podium-size) * 3);
-  background: linear-gradient(180deg, #9cc622 0%, #7ea91a 54%, #688c16 100%);
+  background: #81ac1c;
 }
 
 .podium__left::after {
-  background: linear-gradient(180deg, rgba(141, 181, 31, 0.9), rgba(84, 111, 19, 0.1));
+  background: linear-gradient(#739919, transparent);
 }
 
 .podium__center {
   padding-top: calc(var(--_podium-size) * 5);
   transform: translate3d(0, 0, 5px);
-  background: linear-gradient(180deg, #b1dc1f 0%, #9fc91d 55%, #88b11c 100%);
+  background: #90c020;
 }
 
 .podium__center:hover {
@@ -105,57 +111,133 @@
 }
 
 .podium__center::after {
-  background: linear-gradient(180deg, rgba(180, 220, 31, 0.95), rgba(120, 164, 22, 0.1));
+  background: linear-gradient(#90c020, transparent);
 }
 
 .podium__right {
   padding-top: calc(var(--_podium-size) * 1);
-  background: linear-gradient(180deg, #8eb719 0%, #7ba118 50%, #688915 100%);
+  background: #739919;
 }
 
 .podium__right::after {
-  background: linear-gradient(180deg, rgba(120, 157, 24, 0.95), rgba(84, 111, 19, 0.1));
+  background: linear-gradient(#648616, transparent);
 }
 
 .podium__number {
   position: absolute;
-  inset: 0 auto auto 50%;
-  transform: translate(-50%, 22%);
-  color: #f4f4f4;
-  font-size: clamp(3rem, 8vw, 4.8rem);
+  top: 26%;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  color: #f3f3f3;
+  font-size: clamp(2.8rem, 7vw, 4.8rem);
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  z-index: 2;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
 }
 
-.podium__label {
-  display: none;
+.podium__image {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 3;
+  transform: translate(-50%, -80%) translateZ(-55px);
+  transform-style: preserve-3d;
+  transform-origin: center;
+}
+
+.podium__image > img {
+  width: calc(var(--_podium-size) * 10);
+  height: calc(var(--_podium-size) * 10);
+  border-radius: 999px;
+  object-fit: cover;
+  border: 3px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25);
+}
+
+.podium__image::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 100%;
+  height: calc(var(--_podium-size) * 6);
+  border-radius: 100%;
+  filter: blur(20px);
+  background: linear-gradient(#0e1303, transparent);
+  transform: rotateX(90deg);
+}
+
+.podium__front:hover > .podium__image {
+  animation: rotate 10s linear infinite;
+}
+
+@keyframes rotate {
+  to {
+    transform: translate(-50%, -80%) translateZ(-55px) rotateY(360deg);
+  }
+}
+
+.podium__name {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  z-index: 2;
+  transform: translateX(-50%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.podium__program,
+.podium__year {
+  position: absolute;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.podium__program {
+  top: 66%;
+}
+
+.podium__year {
+  top: 74%;
+}
+
+.podium__xp {
+  position: absolute;
+  left: 50%;
+  bottom: 11px;
+  z-index: 2;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 3px 10px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
 }
 
 .podium-empty-state {
   margin-top: 24px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 14px 16px;
   color: rgba(255, 255, 255, 0.92);
   font-size: 14px;
 }
 
-@media (max-width: 900px) {
-  .podium-page {
-    padding: 16px;
-    border-radius: 24px;
-  }
-
+@media only screen and (min-width: 600px) {
   .podium-container {
-    --_podium-size: 6px;
-    margin-top: 72px;
+    --_podium-size: 7.5px;
   }
 }
 
-@media (max-width: 640px) {
-  .podium {
-    gap: 8px;
+@media only screen and (min-width: 960px) {
+  .podium-container {
+    --_podium-size: 10px;
   }
 }

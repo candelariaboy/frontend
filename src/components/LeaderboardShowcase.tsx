@@ -8,31 +8,39 @@ type LeaderboardShowcaseProps = {
   error: string
 }
 
-function PodiumBlock({
-  rank,
-  className,
-  style,
+function PodiumItem({
   entry,
+  className,
+  rank,
+  height,
+  delay,
 }: {
-  rank: number
-  className: string
-  style: CSSProperties
   entry?: LeaderboardEntry
+  className: string
+  rank: number
+  height: string
+  delay: number
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      whileHover={{ y: -8 }}
+      transition={{ duration: 0.45, delay }}
+      whileHover={{ y: -6 }}
       className={`podium__front ${className}`}
-      style={style}
+      style={{ height } as CSSProperties}
     >
       <div className="podium__number">{rank}</div>
       {entry ? (
-        <div className="podium__label" title={entry.username}>
-          {entry.username}
-        </div>
+        <>
+          <div className="podium__image">
+            <img src={entry.avatarUrl} alt={entry.username} />
+          </div>
+          <div className="podium__name">{entry.username}</div>
+          <div className="podium__program">{entry.program || "Program not set"}</div>
+          <div className="podium__year">{entry.yearLevel || "Year level not set"}</div>
+          <div className="podium__xp">{Number(entry.xp || 0).toLocaleString()} XP</div>
+        </>
       ) : null}
     </motion.div>
   )
@@ -40,9 +48,6 @@ function PodiumBlock({
 
 export default function LeaderboardShowcase({ entries, error }: LeaderboardShowcaseProps) {
   const podiumEntries = entries.slice(0, 3)
-  const secondPlace = podiumEntries[1]
-  const firstPlace = podiumEntries[0]
-  const thirdPlace = podiumEntries[2]
 
   return (
     <section className="podium-page">
@@ -50,24 +55,9 @@ export default function LeaderboardShowcase({ entries, error }: LeaderboardShowc
 
       <div className="podium-container">
         <div className="podium">
-          <PodiumBlock
-            rank={2}
-            className="podium__left"
-            style={{ height: "160px" }}
-            entry={secondPlace}
-          />
-          <PodiumBlock
-            rank={1}
-            className="podium__center"
-            style={{ height: "190px" }}
-            entry={firstPlace}
-          />
-          <PodiumBlock
-            rank={3}
-            className="podium__right"
-            style={{ height: "140px" }}
-            entry={thirdPlace}
-          />
+          <PodiumItem entry={podiumEntries[1]} className="podium__left" rank={2} height="160px" delay={0.08} />
+          <PodiumItem entry={podiumEntries[0]} className="podium__center" rank={1} height="190px" delay={0.02} />
+          <PodiumItem entry={podiumEntries[2]} className="podium__right" rank={3} height="140px" delay={0.14} />
         </div>
       </div>
 
