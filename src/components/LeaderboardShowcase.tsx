@@ -39,8 +39,10 @@ function PodiumItem({
   const xp = Number(entry?.xp || 0).toLocaleString()
   const initials = getInitials(title)
 
+  const podiumClassName = rank === 1 ? `${className} podium__champion` : className
+
   return (
-    <div className={`podium__front ${className}`}>
+    <div className={`podium__front ${podiumClassName}`}>
       <div className="podium__image">
         {rank === 1 && (
           <svg className="crown" viewBox="0 0 24 24" fill="#F5B93E" aria-hidden="true">
