@@ -44,7 +44,7 @@ export default function StudentLeaderboardPage() {
   return (
     <main className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <LeaderboardShowcase entries={entries} error={error} scopeLabel="Student side view" />
+        <LeaderboardShowcase entries={entries} error={error} />
       </div>
     </main>
   )

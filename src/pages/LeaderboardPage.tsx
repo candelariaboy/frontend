@@ -45,7 +45,7 @@ export default function LeaderboardPage() {
   return (
     <AdminFrame>
       <div className="mx-auto max-w-6xl px-4 py-1 sm:px-6 sm:py-2">
-        <LeaderboardShowcase entries={entries} error={error} scopeLabel="Admin side view" />
+        <LeaderboardShowcase entries={entries} error={error} />
       </div>
     </AdminFrame>
   )
