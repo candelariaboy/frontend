@@ -6,7 +6,6 @@
   position:relative;
   overflow-x:hidden;
   padding: 60px 20px 100px;
-  container-type: inline-size;
 }
 
 /* soft ambient glow, plain 2D layer, always visible */
@@ -55,7 +54,7 @@
 }
 
 .podium-container {
-  --_podium-size: clamp(8px, 1.5cqw, 16px);
+  --_podium-size: clamp(8px, 1.2vw, 16px);
   perspective: 500px;
   margin-top: 140px;
   display: grid;
@@ -87,7 +86,7 @@
   transform-style: preserve-3d;
   font-size: calc(var(--_podium-size) * 12);
   font-weight: 900;
-  gap: clamp(10px, 3cqw, 24px);
+  gap: clamp(10px, 2.5vw, 24px);
   transform: rotateX(-40deg);
   text-align: center;
 }
