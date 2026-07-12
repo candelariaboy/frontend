@@ -42,8 +42,8 @@ export default function StudentLeaderboardPage() {
   }
 
   return (
-    <main className="w-full px-0 py-0">
-      <div className="w-full">
+    <main className="w-full px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-6xl">
         <LeaderboardShowcase entries={entries} error={error} />
       </div>
     </main>

@@ -39,7 +39,7 @@
   --_podium-size: 4px;
   display: grid;
   place-items: center;
-  margin-top: 168px;
+  margin-top: clamp(18rem, 20vw, 19rem);
   perspective: calc(var(--_podium-size) * 50);
   overflow: visible;
 }
