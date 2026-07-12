@@ -1,4 +1,5 @@
 import type { LeaderboardEntry } from "../types"
+import LeaderboardRow from "./LeaderboardRow"
 import "./LeaderboardShowcase.css"
 
 type LeaderboardShowcaseProps = {
@@ -63,6 +64,7 @@ function PodiumItem({
 
 export default function LeaderboardShowcase({ entries, error }: LeaderboardShowcaseProps) {
   const podiumEntries = entries.slice(0, 3)
+  const extraEntries = entries.slice(3)
 
   return (
     <section className="podium-page">
@@ -79,7 +81,25 @@ export default function LeaderboardShowcase({ entries, error }: LeaderboardShowc
         </div>
       </div>
 
-      {entries.length === 0 ? <div className="podium-empty-state">{error || "No leaderboard data yet."}</div> : null}
+      {extraEntries.length > 0 ? (
+        <div className="leaderboard-list-section">
+          <div className="leaderboard-list-section__header">
+            <div>
+              <div className="leaderboard-list-section__eyebrow">More rankings</div>
+              <h2 className="leaderboard-list-section__title">Rank 4 and below</h2>
+            </div>
+            <div className="leaderboard-list-section__note">Scroll for more players</div>
+          </div>
+
+          <div className="leaderboard-list">
+            {extraEntries.map((entry, index) => (
+              <LeaderboardRow key={entry.id} entry={entry} rank={index + 4} />
+            ))}
+          </div>
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="podium-empty-state">{error || "No leaderboard data yet."}</div>
+      ) : null}
     </section>
   )
 }

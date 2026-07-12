@@ -304,3 +304,83 @@
   font-size: 14px;
   text-align: center;
 }
+
+.leaderboard-list-section {
+  margin-top: 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(10, 14, 27, 0.86), rgba(7, 10, 18, 0.94));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  padding: 1.25rem;
+  backdrop-filter: blur(14px);
+}
+
+.leaderboard-list-section__header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.leaderboard-list-section__eyebrow {
+  color: rgba(245, 185, 62, 0.92);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.leaderboard-list-section__title {
+  margin: 0.35rem 0 0;
+  color: #f8fafc;
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.leaderboard-list-section__note {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.leaderboard-list {
+  display: grid;
+  gap: 0.9rem;
+  max-height: min(60vh, 34rem);
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  scrollbar-gutter: stable;
+}
+
+.leaderboard-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.leaderboard-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+}
+
+.leaderboard-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(245, 185, 62, 0.72), rgba(139, 107, 255, 0.72));
+  border-radius: 999px;
+  border: 2px solid rgba(10, 14, 27, 0.9);
+}
+
+@media (max-width: 640px) {
+  .leaderboard-list-section {
+    padding: 1rem;
+  }
+
+  .leaderboard-list-section__header {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .leaderboard-list-section__note {
+    white-space: normal;
+  }
+}
