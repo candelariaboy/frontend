@@ -18,7 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 def _should_run_runtime_schema_init() -> bool:
-    return os.getenv("RUN_RUNTIME_SCHEMA_INIT", "").strip().lower() == "true"
+    value = os.getenv("RUN_RUNTIME_SCHEMA_INIT", "").strip().lower()
+    if value in {"false", "0", "no", "off"}:
+        return False
+    return True
 
 
 def _ensure_certificate_record_columns():
