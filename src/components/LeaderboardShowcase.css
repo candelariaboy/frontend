@@ -18,7 +18,7 @@
 }
 
 .leaderboard-carousel__arrow {
-  position: fixed;
+  position: absolute;
   top: 50%;
   z-index: 30;
   display: grid;
@@ -48,11 +48,11 @@
 }
 
 .leaderboard-carousel__arrow--left {
-  left: max(16px, calc((100vw - 1200px) / 2));
+  left: 0;
 }
 
 .leaderboard-carousel__arrow--right {
-  right: max(16px, calc((100vw - 1200px) / 2));
+  right: 0;
 }
 
 .podium-header {
