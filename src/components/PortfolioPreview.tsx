@@ -366,7 +366,7 @@ export default function PortfolioPreview({
                     </span>
                   </div>
                   <div className="mt-4 overflow-hidden rounded-[16px] border border-[#e7ecf4]">
-                    <div className="grid grid-cols-[minmax(220px,1.6fr)_minmax(210px,1fr)_110px_130px] gap-0 border-b border-[#e7ecf4] bg-[#f8fbff] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7c88a3]">
+                    <div className="hidden border-b border-[#e7ecf4] bg-[#f8fbff] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7c88a3] md:grid md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_90px_116px]">
                       <div>Repository</div>
                       <div>Languages</div>
                       <div>Commits</div>
@@ -377,22 +377,30 @@ export default function PortfolioPreview({
                         const repoUrl = repo.htmlUrl || `https://github.com/${profile.username}/${repo.name}`
                         const languages = repoLanguageList(repo)
                         const row = (
-                          <article className="grid grid-cols-[minmax(220px,1.6fr)_minmax(210px,1fr)_110px_130px] items-center gap-0 px-4 py-3 transition hover:bg-[#fafcff]">
-                            <div className="min-w-0 pr-4">
+                          <article className="grid gap-3 px-4 py-4 transition hover:bg-[#fafcff] md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_90px_116px] md:items-center md:gap-0 md:py-3">
+                            <div className="min-w-0 md:pr-4">
                               <p className="truncate text-[14px] font-semibold text-[#172033]">{repo.name}</p>
                               <p className="mt-1 line-clamp-2 text-[12px] leading-5 text-[#667085]">
                                 {repo.description || "No description provided."}
                               </p>
                             </div>
-                            <div className="flex flex-wrap gap-1.5 py-1 pr-4">
+                            <div className="flex min-w-0 flex-wrap gap-1.5 py-1 md:pr-4">
                               {(languages.length > 0 ? languages : ["Unknown"]).map((language) => (
                                 <span key={`${repo.name}-row-${language}`} className="rounded-full border border-[#d7deef] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#475467]">
                                   {language}
                                 </span>
                               ))}
                             </div>
-                            <div className="text-[12px] font-medium text-[#475467]">{repo.commitCount || 0}</div>
-                            <div className="text-[12px] font-medium text-[#475467]">{formatRepoDate(repo.lastUpdated || repo.last_push)}</div>
+                            <div className="grid grid-cols-2 gap-2 text-[12px] font-medium text-[#475467] md:contents">
+                              <div>
+                                <span className="mr-1 font-semibold text-[#7c88a3] md:hidden">Commits:</span>
+                                {repo.commitCount || 0}
+                              </div>
+                              <div>
+                                <span className="mr-1 font-semibold text-[#7c88a3] md:hidden">Updated:</span>
+                                {formatRepoDate(repo.lastUpdated || repo.last_push)}
+                              </div>
+                            </div>
                           </article>
                         )
                         if (!enableRepoLinks) return <div key={repo.name}>{row}</div>
