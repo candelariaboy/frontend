@@ -154,7 +154,11 @@ frontend/.env
 Required value:
 
 ```env
+# Local dev:
 VITE_API_BASE=http://localhost:8000
+
+# Production:
+# Set this to your deployed backend URL, or leave it empty only if the frontend and backend are served from the same origin.
 ```
 
 ## Local Setup

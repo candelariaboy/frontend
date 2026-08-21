@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { NavLink } from "react-router-dom"
-import { clearStoredAuth, fetchMyCertificates, fetchOwnerPortfolio, fetchProjectLearningPaths, getStoredAuth, logoutAuth, pingAuth, setStoredAuth } from "../lib/api"
+import { clearAllStoredAppData, fetchMyCertificates, fetchOwnerPortfolio, fetchProjectLearningPaths, getStoredAuth, logoutAuth, pingAuth, setStoredAuth } from "../lib/api"
 import { getStudentCertificatesNotificationTotal } from "../lib/certificateNotifications"
 import { getStudentLearningPathNotificationCount } from "../lib/learningPathNotifications"
 
@@ -98,7 +98,7 @@ export default function Navbar({
     const stored = getStoredAuth()
     if (!stored.token) return
     pingAuth(stored.token).catch(() => {
-      clearStoredAuth()
+      clearAllStoredAppData()
     })
   }, [])
 
@@ -239,7 +239,7 @@ export default function Navbar({
     } catch (e) {
       // ignore logout errors
     }
-    clearStoredAuth()
+    clearAllStoredAppData()
     window.location.href = "/"
   }
 

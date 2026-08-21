@@ -28,7 +28,9 @@ export default function AdminLoginPage() {
     } catch (error) {
       if (error instanceof Error && error.message.trim()) {
         if (error.message === "Failed to fetch") {
-          setError(`Cannot connect to backend API at ${API_BASE}. Check the backend URL and redeploy the frontend after changing VITE_API_BASE.`)
+          setError(
+            `Cannot connect to backend API at ${API_BASE || "the current site"}. Check the backend URL and redeploy the frontend after setting VITE_API_BASE to your deployed backend.`
+          )
         } else {
           setError(error.message)
         }

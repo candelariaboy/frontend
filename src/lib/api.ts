@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE = "http://localhost:8000"
+const DEFAULT_API_BASE = import.meta.env.DEV ? "http://localhost:8000" : ""
 export const API_BASE = (import.meta.env.VITE_API_BASE || DEFAULT_API_BASE).replace(/\/$/, "")
 
 const TOKEN_KEY = "devpath_token"
@@ -49,9 +49,7 @@ export function getStoredAuth() {
 }
 
 export function clearStoredAuth() {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(USERNAME_KEY)
-  localStorage.removeItem(AVATAR_KEY)
+  clearAllStoredAppData()
 }
 
 export function markUserFirstSeen(username: string) {
@@ -109,8 +107,7 @@ export function getStoredAdminAuth() {
 }
 
 export function clearStoredAdminAuth() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY)
-  localStorage.removeItem(ADMIN_USERNAME_KEY)
+  clearAllStoredAppData()
 }
 
 /** Clears admin credentials then hard-navigates (avoids a React frame still on `/admin/*` without a token → 404 / stuck UI). */
@@ -1306,4 +1303,40 @@ export async function createPortfolioReview(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
+}
+
+export function clearAllStoredAppData() {
+  if (typeof window === "undefined") return
+
+  const storage = window.localStorage
+  const exactKeys = new Set([
+    "devpath_token",
+    "devpath_username",
+    "devpath_avatar_url",
+    "devpath_admin_token",
+    "devpath_admin_username",
+    "devpath_feature_flags",
+    "devpath_theme",
+    "learning-path-stage-statuses",
+    "learning-path-stage-checks",
+    "learning-path-stage-proof-status",
+  ])
+  const prefixes = [
+    "devpath_first_seen_at:",
+    "devpath_level:",
+    "certificate-seen:",
+    "learning-path-stage-seen:",
+    "learning-path-proof-seen:",
+  ]
+  const keysToRemove: string[] = []
+
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index)
+    if (!key) continue
+    if (exactKeys.has(key) || prefixes.some((prefix) => key.startsWith(prefix))) {
+      keysToRemove.push(key)
+    }
+  }
+
+  keysToRemove.forEach((key) => storage.removeItem(key))
 }
