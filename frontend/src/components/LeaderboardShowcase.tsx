@@ -74,8 +74,7 @@ export default function LeaderboardShowcase({ entries, error }: LeaderboardShowc
       <div className="glow"></div>
       
       <div className="header podium-header">
-        <div className="eyebrow podium-header__eyebrow">Season leaderboard</div>
-        <h1 className="podium-page__title">Top <span>3</span></h1>
+        <h1 className="podium-page__title">Top <span>Leaderboards</span></h1>
         <div className="sub podium-header__sub">// ranked_by: total_xp</div>
         <div className="divider"></div>
       </div>
