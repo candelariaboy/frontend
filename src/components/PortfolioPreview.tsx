@@ -365,9 +365,9 @@ export default function PortfolioPreview({
                       {repos.length} repos
                     </span>
                   </div>
-                  <div className="mt-4 overflow-x-auto rounded-[16px] border border-[#e7ecf4]">
+                  <div className="mt-4 max-h-[60vh] overflow-auto rounded-[16px] border border-[#e7ecf4] sm:max-h-[560px]">
                     <div className="min-w-[720px]">
-                      <div className="grid grid-cols-[minmax(220px,1.6fr)_minmax(210px,1fr)_90px_116px] border-b border-[#e7ecf4] bg-[#f8fbff] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7c88a3]">
+                      <div className="sticky top-0 z-10 grid grid-cols-[minmax(220px,1.6fr)_minmax(210px,1fr)_90px_116px] border-b border-[#e7ecf4] bg-[#f8fbff] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7c88a3]">
                         <div>Repository</div>
                         <div>Languages</div>
                         <div>Commits</div>
