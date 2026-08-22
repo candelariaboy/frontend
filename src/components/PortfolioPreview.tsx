@@ -191,7 +191,7 @@ export default function PortfolioPreview({
 
       <section className="grid gap-0 xl:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="border-b border-[#edf1f7] bg-[#fbfcff] px-5 py-5 xl:border-b-0 xl:border-r xl:px-6">
-          <div className="space-y-5">
+          <div className="space-y-5 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:pr-1">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7c88a3]">About</p>
               <p className="mt-3 text-[14px] leading-7 text-[#334155]">
@@ -365,15 +365,55 @@ export default function PortfolioPreview({
                       {repos.length} repos
                     </span>
                   </div>
-                  <div className="mt-4 max-h-[60vh] overflow-auto rounded-[16px] border border-[#e7ecf4] sm:max-h-[560px]">
-                    <div className="min-w-[720px]">
-                      <div className="sticky top-0 z-10 grid grid-cols-[minmax(220px,1.6fr)_minmax(210px,1fr)_90px_116px] border-b border-[#e7ecf4] bg-[#f8fbff] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7c88a3]">
-                        <div>Repository</div>
-                        <div>Languages</div>
-                        <div>Commits</div>
-                        <div>Updated</div>
-                      </div>
-                      <div className="divide-y divide-[#edf1f7]">
+                  <div className="mt-4 max-h-[420px] overflow-y-auto pr-1 grid gap-3 lg:hidden">
+                    {remainingProjects.map((repo) => {
+                      const repoUrl = repo.htmlUrl || `https://github.com/${profile.username}/${repo.name}`
+                      const languages = repoLanguageList(repo)
+                      const card = (
+                        <article className="rounded-[16px] border border-[#e7ecf4] bg-[#fcfdff] p-4 transition hover:border-[#cfd7e6] hover:shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-[14px] font-semibold text-[#172033]">{repo.name}</p>
+                              <p className="mt-1 line-clamp-2 text-[12px] leading-5 text-[#667085]">
+                                {repo.description || "No description provided."}
+                              </p>
+                            </div>
+                            <div className="text-right text-[11px] text-[#667085]">
+                              <p className="font-semibold text-[#101828]">{repo.commitCount || 0}</p>
+                              <p>commits</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {(languages.length > 0 ? languages : ["Unknown"]).map((language) => (
+                              <span
+                                key={`${repo.name}-mobile-${language}`}
+                                className="rounded-full border border-[#d7deef] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#475467]"
+                              >
+                                {language}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-3 text-[11px] text-[#667085]">
+                            Updated {formatRepoDate(repo.lastUpdated || repo.last_push)}
+                          </div>
+                        </article>
+                      )
+                      if (!enableRepoLinks) return <div key={repo.name}>{card}</div>
+                      return (
+                        <a key={repo.name} href={repoUrl} target="_blank" rel="noreferrer" className="block">
+                          {card}
+                        </a>
+                      )
+                    })}
+                  </div>
+                  <div className="mt-4 hidden max-h-[520px] overflow-y-auto overflow-hidden rounded-[16px] border border-[#e7ecf4] lg:block">
+                    <div className="grid grid-cols-[minmax(220px,1.6fr)_minmax(210px,1fr)_110px_130px] gap-0 border-b border-[#e7ecf4] bg-[#f8fbff] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7c88a3]">
+                      <div>Repository</div>
+                      <div>Languages</div>
+                      <div>Commits</div>
+                      <div>Updated</div>
+                    </div>
+                    <div className="divide-y divide-[#edf1f7]">
                       {remainingProjects.map((repo) => {
                         const repoUrl = repo.htmlUrl || `https://github.com/${profile.username}/${repo.name}`
                         const languages = repoLanguageList(repo)
@@ -387,7 +427,10 @@ export default function PortfolioPreview({
                             </div>
                             <div className="flex min-w-0 flex-wrap gap-1.5 py-1 pr-4">
                               {(languages.length > 0 ? languages : ["Unknown"]).map((language) => (
-                                <span key={`${repo.name}-row-${language}`} className="rounded-full border border-[#d7deef] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#475467]">
+                                <span
+                                  key={`${repo.name}-row-${language}`}
+                                  className="rounded-full border border-[#d7deef] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#475467]"
+                                >
                                   {language}
                                 </span>
                               ))}
@@ -403,7 +446,6 @@ export default function PortfolioPreview({
                           </a>
                         )
                       })}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -414,7 +456,7 @@ export default function PortfolioPreview({
           {jobExperience.length > 0 ? (
             <section className="border-b border-[#edf1f7] px-5 py-5 sm:px-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7c88a3]">Experience</p>
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 max-h-[320px] space-y-3 overflow-y-auto pr-1">
                 {jobExperience.map((item) => (
                   <article key={`${item.title}-${item.year || ""}`} className="rounded-[14px] border border-[#e7ecf4] bg-[#fcfdff] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -437,7 +479,7 @@ export default function PortfolioPreview({
           {educationHistory.length > 0 ? (
             <section className="border-b border-[#edf1f7] px-5 py-5 sm:px-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7c88a3]">Education</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 max-h-[280px] grid gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
                 {educationHistory.map((item) => (
                   <article key={`${item.title}-${item.year || ""}`} className="rounded-[14px] border border-[#e7ecf4] bg-[#fcfdff] p-4">
                     <p className="text-[15px] font-semibold text-[#172033]">{item.title}</p>
@@ -454,7 +496,7 @@ export default function PortfolioPreview({
               {visibleBadges.length === 0 ? (
                 <p className="mt-3 text-[13px] text-[#6b7390]">No badges yet.</p>
               ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-4 max-h-[360px] grid gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
                   {visibleBadges.slice(0, 6).map((badge) => (
                     <article key={badge.label} className="rounded-[14px] border border-[#e7ecf4] bg-[#fcfdff] p-4">
                       <p className="text-[14px] font-semibold text-[#1e2637]">{badge.label}</p>

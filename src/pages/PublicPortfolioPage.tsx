@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useParams } from "react-router-dom"
-import * as THREE from "three"
-import NET from "vanta/dist/vanta.net.min"
 import PortfolioPreview from "../components/PortfolioPreview"
 import {
   fetchOwnerPortfolio,
@@ -27,20 +25,42 @@ type JobItem = {
   end?: string
   description?: string
 }
+type VantaEffect = { destroy?: () => void }
+type VantaNetFactory = (options: Record<string, unknown>) => VantaEffect
+
+let vantaAssetsPromise: Promise<{ NET: VantaNetFactory; THREE: unknown }> | null = null
+
+function loadVantaAssets() {
+  vantaAssetsPromise ??= Promise.all([
+    import("three"),
+    import("vanta/dist/vanta.net.min"),
+  ]).then(([threeModule, netModule]) => ({
+    THREE: threeModule,
+    NET: netModule.default as VantaNetFactory,
+  }))
+  return vantaAssetsPromise
+}
 
 function PortfolioNetBackground() {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const effectRef = useRef<{ destroy?: () => void } | null>(null)
+  const effectRef = useRef<VantaEffect | null>(null)
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
     const container = containerRef.current
     if (!container || prefersReducedMotion.matches) return
 
-    const buildEffect = () => {
+    let cancelled = false
+    let buildToken = 0
+
+    const buildEffect = async () => {
+      const currentToken = ++buildToken
+      const { NET, THREE } = await loadVantaAssets()
+      if (cancelled || currentToken !== buildToken || !containerRef.current) return
+
       effectRef.current?.destroy?.()
       effectRef.current = NET({
-        el: container,
+        el: containerRef.current,
         THREE,
         mouseControls: true,
         touchControls: true,
@@ -55,16 +75,17 @@ function PortfolioNetBackground() {
         maxDistance: window.innerWidth < 768 ? 19 : 22,
         spacing: window.innerWidth < 768 ? 17 : 20,
         showDots: true,
-      }) as { destroy?: () => void }
+      })
     }
 
-    buildEffect()
+    void buildEffect()
     const handleResize = () => {
-      buildEffect()
+      void buildEffect()
     }
     window.addEventListener("resize", handleResize)
 
     return () => {
+      cancelled = true
       window.removeEventListener("resize", handleResize)
       effectRef.current?.destroy?.()
       effectRef.current = null
@@ -453,10 +474,10 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
                   </a>
                 ) : null}
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid w-full gap-2 sm:grid-cols-2 xl:flex xl:w-auto xl:flex-wrap xl:items-center">
                 <button
                   type="button"
-                  className={heroPrimaryButtonClass}
+                  className={`${heroPrimaryButtonClass} w-full xl:w-auto`}
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(shareUrl)
@@ -468,7 +489,7 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
                 </button>
                 <button
                   type="button"
-                  className={heroSecondaryButtonClass}
+                  className={`${heroSecondaryButtonClass} w-full xl:w-auto`}
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(reviewerUrl)
@@ -481,7 +502,7 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
                 <button
                   type="button"
                   disabled={syncing || saving || !canEdit}
-                  className={heroSecondaryButtonClass}
+                  className={`${heroSecondaryButtonClass} w-full xl:w-auto`}
                   onClick={syncPortfolio}
                 >
                   {syncing ? "Syncing..." : "Sync"}
@@ -489,7 +510,7 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
                 <button
                   type="button"
                   disabled={saving || !canEdit}
-                  className={heroSaveButtonClass}
+                  className={`${heroSaveButtonClass} w-full xl:w-auto`}
                   onClick={saveChanges}
                 >
                   {saving ? "Saving..." : "Save changes"}
@@ -502,7 +523,8 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
         <section className={mode === "owner" ? "grid gap-5 xl:grid-cols-[460px_minmax(0,1fr)]" : ""}>
           {mode === "owner" ? (
             <aside className="portfolio-editor-shell self-start overflow-hidden rounded-[32px] p-4 text-[#d6deef] sm:p-5 xl:sticky xl:top-6">
-              <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(17,23,43,0.9),rgba(22,31,60,0.86)_58%,rgba(12,17,35,0.96))] p-5 shadow-[0_24px_60px_rgba(4,8,20,0.45)]">
+              <div className="xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:pr-1">
+                <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(17,23,43,0.9),rgba(22,31,60,0.86)_58%,rgba(12,17,35,0.96))] p-5 shadow-[0_24px_60px_rgba(4,8,20,0.45)]">
                 <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/45 to-transparent" />
                 <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-[#8fa6ff]">Portfolio Studio</p>
                 <h2
@@ -535,7 +557,7 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
                       Live
                     </span>
                   </div>
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-4 max-h-[260px] space-y-3 overflow-y-auto pr-1">
                     <label className="portfolio-editor-toggle-row">
                       <div>
                         <p className="text-[14px] font-semibold text-[#f5f7ff]">Show badges</p>
@@ -668,7 +690,7 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
                       Add education
                     </button>
                   </div>
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-4 max-h-[320px] space-y-3 overflow-y-auto pr-1">
                     {educationHistory.length === 0 ? (
                       <div className="rounded-[18px] border border-dashed border-white/10 bg-white/[0.03] px-4 py-3 text-[12px] text-[#95a3c7]">
                         Add your degree, school, or training milestones here.
@@ -921,6 +943,7 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
                     })}
                   </div>
                 </article>
+                </div>
               </div>
             </aside>
           ) : null}

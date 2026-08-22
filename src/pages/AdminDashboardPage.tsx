@@ -286,12 +286,12 @@ export default function AdminDashboardPage() {
                       dataKey="date"
                       tick={{ fontSize: 10, fill: "#667085" }}
                       interval={2}
-                      tickFormatter={(value) => formatDateDDMMYYYY(String(value))}
+                      tickFormatter={(value: unknown) => formatDateDDMMYYYY(String(value))}
                     />
                     <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "#667085" }} />
                     <Tooltip
-                      formatter={(value) => [`${value}`, "Logins"]}
-                      labelFormatter={(value) => formatDateDDMMYYYY(String(value))}
+                      formatter={(value: unknown) => [`${value}`, "Logins"]}
+                      labelFormatter={(value: unknown) => formatDateDDMMYYYY(String(value))}
                     />
                     <Line
                       type="monotone"

@@ -80,7 +80,7 @@ export default function AdminLoginActivitySection({ data, live }: AdminLoginActi
                   dataKey="time"
                   tick={{ fontSize: 10 }}
                   interval={5}
-                  tickFormatter={(value) => (value === lastLiveTime ? `${value} (Now)` : value)}
+                  tickFormatter={(value: unknown) => (value === lastLiveTime ? `${value} (Now)` : String(value))}
                 />
                 <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                 <Tooltip />

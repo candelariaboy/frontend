@@ -1,20 +1,6 @@
 import { Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 import Navbar from "./components/Navbar"
-import DashboardPage from "./pages/DashboardPage"
-import LandingPage from "./pages/LandingPage"
-import LeaderboardPage from "./pages/LeaderboardPage"
-import StudentLeaderboardPage from "./pages/StudentLeaderboardPage"
-import LearningPathsPage from "./pages/LearningPathsPage"
-import CertificatesPage from "./pages/CertificatesPage"
-import PublicPortfolioPage from "./pages/PublicPortfolioPage"
-import RegisterPage from "./pages/RegisterPage"
-import AchievementsPage from "./pages/AchievementsPage"
-import AdminLoginPage from "./pages/AdminLoginPage"
-import AdminDashboardPage from "./pages/AdminDashboardPage"
-import AdminCertificatesPage from "./pages/AdminCertificatesPage"
-import AdminAiEvaluationPage from "./pages/AdminAiEvaluationPage"
-import AdminStudentsPage from "./pages/AdminStudentsPage"
 import {
   clearStoredAuth,
   getStoredAuth,
@@ -22,7 +8,22 @@ import {
   pingAuth,
   setStoredAuth,
 } from "./lib/api"
-import NotFoundPage from "./pages/NotFoundPage"
+
+const AchievementsPage = lazy(() => import("./pages/AchievementsPage"))
+const AdminAiEvaluationPage = lazy(() => import("./pages/AdminAiEvaluationPage"))
+const AdminCertificatesPage = lazy(() => import("./pages/AdminCertificatesPage"))
+const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"))
+const AdminLoginPage = lazy(() => import("./pages/AdminLoginPage"))
+const AdminStudentsPage = lazy(() => import("./pages/AdminStudentsPage"))
+const CertificatesPage = lazy(() => import("./pages/CertificatesPage"))
+const DashboardPage = lazy(() => import("./pages/DashboardPage"))
+const LandingPage = lazy(() => import("./pages/LandingPage"))
+const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"))
+const LearningPathsPage = lazy(() => import("./pages/LearningPathsPage"))
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage"))
+const PublicPortfolioPage = lazy(() => import("./pages/PublicPortfolioPage"))
+const RegisterPage = lazy(() => import("./pages/RegisterPage"))
+const StudentLeaderboardPage = lazy(() => import("./pages/StudentLeaderboardPage"))
 
 /** Nested admin routes; `key` forces correct child when URL and outlet get out of sync (RR7 edge cases). */
 function AdminOutlet() {
@@ -108,6 +109,7 @@ export default function App() {
   }, [isAdminRoute, isPublicPortfolio, location.pathname])
 
   const routesNode = (
+    <Suspense fallback={<div className="min-h-screen bg-paper" />}>
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/admin-login" element={<AdminLoginPage />} />
@@ -145,6 +147,7 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </Suspense>
   )
 
   const routeLoader = routeLoading ? (
