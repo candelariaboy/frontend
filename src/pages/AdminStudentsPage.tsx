@@ -533,15 +533,13 @@ export default function AdminStudentsPage() {
               <div className="mt-5 space-y-4">
                 <section className="admin-surface rounded-[20px] border border-[#e6edf5] p-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#98a2b3]">Portfolio snapshot</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     <InfoPill label="Student ID" value={details.profile.student_id || "-"} />
                     <InfoPill label="Program" value={details.student.program || "-"} />
                     <InfoPill label="Year Level" value={details.student.year_level || "-"} />
-                    <InfoPill label="Target Role" value={details.profile.target_role || "-"} />
                   </div>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <InfoPill label="Career Interest" value={details.profile.career_interest || "-"} />
-                    <InfoPill label="Learning Style" value={details.profile.preferred_learning_style || "-"} />
                     <InfoPill
                       label="Profile Completeness"
                       value={`${details.overview.portfolio_completeness || 0}%`}
