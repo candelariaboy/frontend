@@ -1519,10 +1519,21 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       })
       return next
     })
-    setStageChecksByRepo(() => {
+    setStageChecksByRepo((prev) => {
       const next: Record<string, Record<string, boolean[]>> = {}
       ;(projectPath.projects || []).forEach((project) => {
-        next[project.repo_name] = project.stage_checks || {}
+        const checks: Record<string, boolean[]> = { ...(project.stage_checks || {}) }
+        const localChecks = prev[project.repo_name] || {}
+        Object.entries(optimisticStageChecksRef.current).forEach(([key, optimisticChecks]) => {
+          const [repoKey, stageKey] = key.split("::")
+          if (repoKey !== normalizeStorageKey(project.repo_name)) return
+          const stageTitle =
+            Object.keys(checks).find((title) => normalizeStorageKey(title) === stageKey) ||
+            Object.keys(localChecks).find((title) => normalizeStorageKey(title) === stageKey) ||
+            stageKey
+          checks[stageTitle] = optimisticChecks
+        })
+        next[project.repo_name] = checks
       })
       return next
     })
@@ -2787,10 +2798,11 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   const activeStages = activeRoadmap
     ? activeRoadmap.stages.map((stage, index, stages) => {
         const repoName = activeRoadmap.repoName
+        const optimisticChecks = optimisticStageChecksRef.current[stageStateKey(repoName, stage.title)]
         const localChecks = stageChecksByRepo[repoName]?.[stage.title]
         const backendChecks = getRecordValue(activeProjectPath?.stage_checks, stage.title)
         const backendCheckFlags = normalizeStageChecks(stage.items, backendChecks)
-        const localCheckFlags = normalizeStageChecks(stage.items, localChecks)
+        const localCheckFlags = normalizeStageChecks(stage.items, optimisticChecks || localChecks)
         const backendStatus = getRecordValue(activeProjectPath?.stage_status_overrides, stage.title)
         const normalizedBackendStatus = normalizeStageStatusValue(String(backendStatus || "not_started"))
         const stageUpdate = getRecordValue(activeProjectPath?.stage_progress_updates, stage.title)
@@ -2808,7 +2820,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
           stage.items,
           adminView
             ? backendChecks || localChecks
-            : localChecks || backendChecks
+            : optimisticChecks || localChecks || backendChecks
         )
         if ((storedStatus === "complete_stage" || (storedStatus === "done" && hasRequiredProof)) && stage.items.length > 0) {
           checks = stage.items.map(() => true)
