@@ -1329,9 +1329,6 @@ export function clearAllStoredAppData() {
     "devpath_admin_username",
     "devpath_feature_flags",
     "devpath_theme",
-    "learning-path-stage-statuses",
-    "learning-path-stage-checks",
-    "learning-path-stage-proof-status",
   ])
   const prefixes = [
     "devpath_first_seen_at:",

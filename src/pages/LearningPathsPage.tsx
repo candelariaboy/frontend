@@ -1341,6 +1341,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   const [stageStatusByRepo, setStageStatusByRepo] = useState<Record<string, Record<string, StageCard["status"]>>>({})
   const [stageChecksByRepo, setStageChecksByRepo] = useState<Record<string, Record<string, boolean[]>>>({})
   const [stageProofStatusByRepo, setStageProofStatusByRepo] = useState<Record<string, Record<string, number>>>({})
+  const [stageStorageHydratedKey, setStageStorageHydratedKey] = useState("")
   const [unlockAnimationsByRepo, setUnlockAnimationsByRepo] = useState<Record<string, Record<string, boolean>>>({})
   const [warningStageItemsByRepo, setWarningStageItemsByRepo] = useState<Record<string, Record<string, Record<number, boolean>>>>({})
   const [proofViewer, setProofViewer] = useState<ProofViewerState | null>(null)
@@ -1551,8 +1552,16 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     })
     setStageChecksByRepo((prev) => {
       const next: Record<string, Record<string, boolean[]>> = {}
+      const storedChecks =
+        !adminView && storageUsernameKey
+          ? readStoredStageChecks()[storageUsernameKey] || {}
+          : {}
       ;(projectPath.projects || []).forEach((project) => {
         const checks: Record<string, boolean[]> = { ...(project.stage_checks || {}) }
+        const storedRepoChecks = getRecordValue(storedChecks, project.repo_name) || {}
+        Object.entries(storedRepoChecks).forEach(([stageTitle, savedChecks]) => {
+          checks[stageTitle] = savedChecks
+        })
         const localChecks = prev[project.repo_name] || {}
         Object.entries(optimisticStageChecksRef.current).forEach(([key, optimisticChecks]) => {
           const [repoKey, stageKey] = key.split("::")
@@ -1837,38 +1846,36 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   useEffect(() => {
     if (adminView) return
     if (!storageUsernameKey) return
-    setStageStatusByRepo({})
-    setStageChecksByRepo({})
-    setStageProofStatusByRepo({})
     if (typeof window === "undefined") return
     const statusStore = readStoredStageStatuses()
-    if (storageUsernameKey in statusStore) {
-      delete statusStore[storageUsernameKey]
-      window.localStorage.setItem(STAGE_STATUS_STORAGE_KEY, JSON.stringify(statusStore))
-    }
     const checksStore = readStoredStageChecks()
-    if (storageUsernameKey in checksStore) {
-      delete checksStore[storageUsernameKey]
-      window.localStorage.setItem(STAGE_CHECK_STORAGE_KEY, JSON.stringify(checksStore))
-    }
     const proofStore = readStoredStageProofStatus()
-    if (storageUsernameKey in proofStore) {
-      delete proofStore[storageUsernameKey]
-      window.localStorage.setItem(STAGE_PROOF_STATUS_KEY, JSON.stringify(proofStore))
-    }
+    setStageStatusByRepo(statusStore[storageUsernameKey] || {})
+    setStageChecksByRepo(checksStore[storageUsernameKey] || {})
+    setStageProofStatusByRepo(proofStore[storageUsernameKey] || {})
+    setStageStorageHydratedKey(storageUsernameKey)
   }, [adminView, storageUsernameKey])
 
   useEffect(() => {
-    return
-  }, [adminView, stageStatusByRepo, storageUsernameKey])
+    if (adminView || !storageUsernameKey || stageStorageHydratedKey !== storageUsernameKey || typeof window === "undefined") return
+    const store = readStoredStageStatuses()
+    store[storageUsernameKey] = stageStatusByRepo
+    window.localStorage.setItem(STAGE_STATUS_STORAGE_KEY, JSON.stringify(store))
+  }, [adminView, stageStatusByRepo, stageStorageHydratedKey, storageUsernameKey])
 
   useEffect(() => {
-    return
-  }, [adminView, stageChecksByRepo, storageUsernameKey])
+    if (adminView || !storageUsernameKey || stageStorageHydratedKey !== storageUsernameKey || typeof window === "undefined") return
+    const store = readStoredStageChecks()
+    store[storageUsernameKey] = stageChecksByRepo
+    window.localStorage.setItem(STAGE_CHECK_STORAGE_KEY, JSON.stringify(store))
+  }, [adminView, stageChecksByRepo, stageStorageHydratedKey, storageUsernameKey])
 
   useEffect(() => {
-    return
-  }, [adminView, stageProofStatusByRepo, storageUsernameKey])
+    if (adminView || !storageUsernameKey || stageStorageHydratedKey !== storageUsernameKey || typeof window === "undefined") return
+    const store = readStoredStageProofStatus()
+    store[storageUsernameKey] = stageProofStatusByRepo
+    window.localStorage.setItem(STAGE_PROOF_STATUS_KEY, JSON.stringify(store))
+  }, [adminView, stageProofStatusByRepo, stageStorageHydratedKey, storageUsernameKey])
 
   useEffect(() => {
     return () => {
@@ -2706,8 +2713,10 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
             stage.items,
             getRecordValue(project?.stage_checks, stage.title)
           )
+          const localChecks = normalizeStageChecks(stage.items, stageChecksByRepo[roadmap.repoName]?.[stage.title])
           const backendStageActivity =
             backendChecks.some(Boolean) ||
+            localChecks.some(Boolean) ||
             Boolean(stageUpdate?.comment) ||
             Boolean((stageUpdate?.proof_items || []).length) ||
             Boolean((stageUpdate?.progress_entries || []).length) ||
@@ -2795,6 +2804,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
           )
           const backendStageActivity =
             backendChecks.some(Boolean) ||
+            repoChecks[stage.title].some(Boolean) ||
             Boolean(stageUpdate?.comment) ||
             Boolean((stageUpdate?.proof_items || []).length) ||
             Boolean((stageUpdate?.progress_entries || []).length) ||
