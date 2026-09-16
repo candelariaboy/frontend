@@ -4927,7 +4927,13 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
               updated_at: activeTimestamp,
             }
           : null
-        const commentThreadEntries = proofViewer.adminFeedbackThread || []
+        const proofSpecificThread =
+          activeProofUrl &&
+          proofViewer.adminFeedbackByProof?.[activeProofUrl] &&
+          Array.isArray(proofViewer.adminFeedbackByProof[activeProofUrl].thread)
+            ? proofViewer.adminFeedbackByProof[activeProofUrl].thread
+            : null
+        const commentThreadEntries = proofSpecificThread || proofViewer.adminFeedbackThread || []
         const displayCommentThread = seedCommentEntry
           ? [seedCommentEntry, ...commentThreadEntries]
           : commentThreadEntries
