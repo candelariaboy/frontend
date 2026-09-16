@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import AdminFrame from "../components/AdminFrame"
 import { getAdminLearningPathNotificationCount } from "../lib/learningPathNotifications"
 import LearningPathsPage from "./LearningPathsPage"
@@ -19,9 +19,25 @@ import type { AdminStudentDetail, AdminStudentSummary } from "../types"
 type YearGroup = { year: string; students: AdminStudentSummary[] }
 type ProgramGroup = { program: string; students: AdminStudentSummary[]; years: YearGroup[] }
 
+const LEARNING_PATH_NOTIFICATION_REFRESH_MS = 30000
+const LEARNING_PATH_NOTIFICATION_CONCURRENCY = 3
+
 const sectionVariants = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.36 } },
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  mapper: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = []
+  for (let index = 0; index < items.length; index += limit) {
+    const chunk = items.slice(index, index + limit)
+    results.push(...(await Promise.all(chunk.map(mapper))))
+  }
+  return results
 }
 
 const resolveProgram = (s: AdminStudentSummary) => (s.program || "").trim() || "Unassigned Program"
@@ -77,6 +93,7 @@ export default function AdminStudentsPage() {
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState("")
   const [note, setNote] = useState("")
+  const learningPathNotificationLoadingRef = useRef(false)
 
   const loadStudents = async () => {
     if (!auth.token) return
@@ -124,24 +141,33 @@ export default function AdminStudentsPage() {
       return
     }
 
-    Promise.all(
-      usernames.map(async (username) => {
+    if (learningPathNotificationLoadingRef.current) return
+    learningPathNotificationLoadingRef.current = true
+
+    mapWithConcurrency(
+      usernames,
+      LEARNING_PATH_NOTIFICATION_CONCURRENCY,
+      async (username) => {
         try {
           const response = await fetchProjectLearningPaths(username)
           return [username, getAdminLearningPathNotificationCount(username, response)] as const
         } catch {
           return [username, 0] as const
         }
+      }
+    )
+      .then((entries) => {
+        if (cancelled) return
+        setLearningPathUnreadByStudent(
+          entries.reduce<Record<string, number>>((accumulator, [username, count]) => {
+            accumulator[username] = count
+            return accumulator
+          }, {})
+        )
       })
-    ).then((entries) => {
-      if (cancelled) return
-      setLearningPathUnreadByStudent(
-        entries.reduce<Record<string, number>>((accumulator, [username, count]) => {
-          accumulator[username] = count
-          return accumulator
-        }, {})
-      )
-    })
+      .finally(() => {
+        learningPathNotificationLoadingRef.current = false
+      })
 
     return () => {
       cancelled = true
@@ -154,7 +180,7 @@ export default function AdminStudentsPage() {
       if (document.visibilityState !== "visible") return
       setLearningPathNotificationRefreshKey((value) => value + 1)
     }
-    const intervalId = window.setInterval(refresh, 4000)
+    const intervalId = window.setInterval(refresh, LEARNING_PATH_NOTIFICATION_REFRESH_MS)
     window.addEventListener("focus", refresh)
     document.addEventListener("visibilitychange", refresh)
     return () => {

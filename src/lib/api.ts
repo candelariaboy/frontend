@@ -10,6 +10,7 @@ const FEATURE_FLAGS_KEY = "devpath_feature_flags"
 const FIRST_SEEN_PREFIX = "devpath_first_seen_at:"
 let portfolioSummaryRequest: Promise<string> | null = null
 let recomputeInsightsRequest: Promise<ReturnType<typeof normalizeResponse>> | null = null
+const projectLearningPathRequests = new Map<string, Promise<any>>()
 
 export type FeatureFlags = {
   sus_auto_prompt: boolean
@@ -450,11 +451,22 @@ export async function fetchLearningPath(username: string) {
 }
 
 export async function fetchProjectLearningPaths(username: string) {
-  const response = await fetch(`${API_BASE}/api/learning-path/projects/${username}?t=${Date.now()}`, { cache: "no-store" })
-  if (!response.ok) {
-    throw new Error("Failed to fetch project learning paths")
-  }
-  return response.json()
+  const key = username.trim().toLowerCase()
+  const activeRequest = projectLearningPathRequests.get(key)
+  if (activeRequest) return activeRequest
+
+  const request = (async () => {
+    const response = await fetch(`${API_BASE}/api/learning-path/projects/${encodeURIComponent(username)}`)
+    if (!response.ok) {
+      throw new Error("Failed to fetch project learning paths")
+    }
+    return response.json()
+  })().finally(() => {
+    projectLearningPathRequests.delete(key)
+  })
+
+  projectLearningPathRequests.set(key, request)
+  return request
 }
 
 export async function fetchCertificateSuggestions(username: string) {

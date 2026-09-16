@@ -20,9 +20,25 @@ type AdminNavItemProps = {
   count?: number
 }
 
+const ADMIN_NOTIFICATION_REFRESH_MS = 30000
+const ADMIN_NOTIFICATION_CONCURRENCY = 3
+
 const frameFadeIn = {
   initial: { opacity: 0, y: 14 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.38 } },
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  mapper: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = []
+  for (let index = 0; index < items.length; index += limit) {
+    const chunk = items.slice(index, index + limit)
+    results.push(...(await Promise.all(chunk.map(mapper))))
+  }
+  return results
 }
 
 function resolvePageMeta(pathname: string) {
@@ -200,8 +216,10 @@ export default function AdminFrame({ children, showBuiltInToolbar = true }: Admi
         const entries = students
           .map((student) => ({ id: Number(student.id || 0), username: String(student.username || "").trim() }))
           .filter((student) => student.id > 0 && student.username)
-        const responses = await Promise.all(
-          entries.map(async ({ id, username }) => {
+        const responses = await mapWithConcurrency(
+          entries,
+          ADMIN_NOTIFICATION_CONCURRENCY,
+          async ({ id, username }) => {
             try {
               const [learningPath, details] = await Promise.all([
                 fetchProjectLearningPaths(username),
@@ -214,7 +232,7 @@ export default function AdminFrame({ children, showBuiltInToolbar = true }: Admi
             } catch {
               return { learningPath: 0, certificates: 0 }
             }
-          })
+          }
         )
         if (!cancelled) {
           setStudentNotificationCount(responses.reduce((sum, item) => sum + item.learningPath, 0))
@@ -229,7 +247,7 @@ export default function AdminFrame({ children, showBuiltInToolbar = true }: Admi
     }
 
     refreshNotifications()
-    const intervalId = window.setInterval(refreshNotifications, 4000)
+    const intervalId = window.setInterval(refreshNotifications, ADMIN_NOTIFICATION_REFRESH_MS)
     return () => {
       cancelled = true
       window.clearInterval(intervalId)
