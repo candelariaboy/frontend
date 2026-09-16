@@ -1357,6 +1357,8 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   const recomputingRef = useRef(false)
   const optimisticStageChecksRef = useRef<Record<string, boolean[]>>({})
   const optimisticStageCheckTimersRef = useRef<Record<string, number>>({})
+  const optimisticStageUpdatesRef = useRef<Record<string, Record<string, unknown>>>({})
+  const optimisticStageUpdateTimersRef = useRef<Record<string, number>>({})
   const storageUsernameKey = normalizeStorageKey(portfolio?.profile?.username || targetUsername)
 
   function bumpNotificationVersion() {
@@ -1408,6 +1410,47 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     }
     delete optimisticStageChecksRef.current[stageKey]
     delete optimisticStageCheckTimersRef.current[stageKey]
+  }
+
+  function protectStageUpdate(repoName: string, stageTitle: string, update: Record<string, unknown>) {
+    const stageKey = stageStateKey(repoName, stageTitle)
+    const existingTimer = optimisticStageUpdateTimersRef.current[stageKey]
+    if (existingTimer) {
+      window.clearTimeout(existingTimer)
+    }
+    optimisticStageUpdatesRef.current[stageKey] = update
+    optimisticStageUpdateTimersRef.current[stageKey] = window.setTimeout(() => {
+      delete optimisticStageUpdatesRef.current[stageKey]
+      delete optimisticStageUpdateTimersRef.current[stageKey]
+    }, 15000)
+  }
+
+  function mergeProtectedStageUpdates(projectPath: ProjectLearningPathResponse) {
+    const protectedEntries = Object.entries(optimisticStageUpdatesRef.current)
+    if (!protectedEntries.length) return projectPath
+    return {
+      ...projectPath,
+      projects: (projectPath.projects || []).map((project) => {
+        let stageProgressUpdates = project.stage_progress_updates || {}
+        let changed = false
+        protectedEntries.forEach(([key, update]) => {
+          const [repoKey, stageKey] = key.split("::")
+          if (repoKey !== normalizeStorageKey(project.repo_name)) return
+          const stageTitle =
+            Object.keys(stageProgressUpdates).find((title) => normalizeStorageKey(title) === stageKey) ||
+            stageKey
+          stageProgressUpdates = {
+            ...stageProgressUpdates,
+            [stageTitle]: {
+              ...(stageProgressUpdates[stageTitle] || {}),
+              ...update,
+            },
+          }
+          changed = true
+        })
+        return changed ? { ...project, stage_progress_updates: stageProgressUpdates } : project
+      }),
+    }
   }
 
   function triggerStageItemWarning(repoName: string, stageTitle: string, itemIndex: number) {
@@ -1880,8 +1923,11 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   useEffect(() => {
     return () => {
       Object.values(optimisticStageCheckTimersRef.current).forEach((timerId) => window.clearTimeout(timerId))
+      Object.values(optimisticStageUpdateTimersRef.current).forEach((timerId) => window.clearTimeout(timerId))
       optimisticStageCheckTimersRef.current = {}
       optimisticStageChecksRef.current = {}
+      optimisticStageUpdateTimersRef.current = {}
+      optimisticStageUpdatesRef.current = {}
     }
   }, [])
 
@@ -2025,6 +2071,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         proof_items: uploadedItems,
       })
       if (updated && typeof updated === "object") {
+        protectStageUpdate(repoName, stageTitle, updated as Record<string, unknown>)
         patchProjectPathStageUpdate(repoName, stageTitle, (current) => ({
           ...current,
           ...(updated as Record<string, unknown>),
@@ -2049,8 +2096,9 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       const ownerUsername = portfolio?.profile?.username || auth.username
       if (ownerUsername) {
         const refreshed = await fetchProjectLearningPaths(ownerUsername)
-        setProjectPaths(refreshed)
-        syncStageTrackingFromProjectPaths(refreshed)
+        const merged = mergeProtectedStageUpdates(refreshed)
+        setProjectPaths(merged)
+        syncStageTrackingFromProjectPaths(merged)
       }
       setStageUpdateFilesByRepo((prev) => {
         const repoDrafts = prev[repoName] || {}
@@ -2154,8 +2202,8 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       const ownerUsername = portfolio?.profile?.username || auth.username
       if (ownerUsername) {
         const refreshed = await fetchProjectLearningPaths(ownerUsername)
-        setProjectPaths(refreshed)
-        syncStageTrackingFromProjectPaths(refreshed)
+        setProjectPaths(mergeProtectedStageUpdates(refreshed))
+        syncStageTrackingFromProjectPaths(mergeProtectedStageUpdates(refreshed))
       }
       setEvidenceByRepo((prev) => {
         const { [repoName]: _removed, ...rest } = prev
@@ -2275,7 +2323,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         },
       }))
       const refreshed = await fetchProjectLearningPaths(targetUsername)
-      setProjectPaths(refreshed)
+      setProjectPaths(mergeProtectedStageUpdates(refreshed))
       return refreshed
     } catch (err) {
       setProjectPathError(err instanceof Error ? err.message : "Admin feedback could not be saved right now.")
@@ -2338,7 +2386,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       const ownerUsername = portfolio?.profile?.username || auth.username
       if (!ownerUsername) return null
       const refreshed = await fetchProjectLearningPaths(ownerUsername)
-      setProjectPaths(refreshed)
+      setProjectPaths(mergeProtectedStageUpdates(refreshed))
       return refreshed
     } catch (err) {
       setProjectPathError(err instanceof Error ? err.message : "Reply could not be posted right now.")
@@ -2386,8 +2434,8 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
           admin_feedback_by_proof: response.admin_feedback_by_proof,
         }))
         const refreshed = await fetchProjectLearningPaths(portfolio?.profile?.username || auth.username)
-        setProjectPaths(refreshed)
-        syncStageTrackingFromProjectPaths(refreshed)
+        setProjectPaths(mergeProtectedStageUpdates(refreshed))
+        syncStageTrackingFromProjectPaths(mergeProtectedStageUpdates(refreshed))
       }
       return response
     } catch (err) {
@@ -2428,8 +2476,8 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       const ownerUsername = portfolio?.profile?.username || auth.username
       if (ownerUsername) {
         const refreshed = await fetchProjectLearningPaths(ownerUsername)
-        setProjectPaths(refreshed)
-        syncStageTrackingFromProjectPaths(refreshed)
+        setProjectPaths(mergeProtectedStageUpdates(refreshed))
+        syncStageTrackingFromProjectPaths(mergeProtectedStageUpdates(refreshed))
       }
     } catch (err) {
       setProjectPathError(err instanceof Error ? err.message : "Progress update could not be deleted right now.")
@@ -2471,8 +2519,8 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
           admin_feedback_thread: response.feedback_thread || current.admin_feedback_thread,
         }))
         const refreshed = await fetchProjectLearningPaths(targetUsername)
-        setProjectPaths(refreshed)
-        syncStageTrackingFromProjectPaths(refreshed)
+        setProjectPaths(mergeProtectedStageUpdates(refreshed))
+        syncStageTrackingFromProjectPaths(mergeProtectedStageUpdates(refreshed))
       }
       return response
     } catch (err) {
@@ -2515,8 +2563,8 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
           try {
             const projectPath = await fetchProjectLearningPaths(targetUsername) as ProjectLearningPathResponse
             if (cancelled) return
-            setProjectPaths(projectPath)
-            syncStageTrackingFromProjectPaths(projectPath)
+            setProjectPaths(mergeProtectedStageUpdates(projectPath))
+            syncStageTrackingFromProjectPaths(mergeProtectedStageUpdates(projectPath))
           } catch {
             if (cancelled) return
             setProjectPaths(null)
@@ -2566,7 +2614,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       try {
         const projectPath = await fetchProjectLearningPaths(currentUsername)
         if (cancelled) return
-        setProjectPaths(projectPath)
+        setProjectPaths(mergeProtectedStageUpdates(projectPath))
       } catch {
         // ignore background refresh errors
       }
@@ -2593,8 +2641,8 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         try {
           const projectPath = await fetchProjectLearningPaths(ownerUsername)
           if (cancelled) return
-          setProjectPaths(projectPath)
-          syncStageTrackingFromProjectPaths(projectPath)
+          setProjectPaths(mergeProtectedStageUpdates(projectPath))
+          syncStageTrackingFromProjectPaths(mergeProtectedStageUpdates(projectPath))
         } catch {
           if (cancelled) return
           setProjectPaths(null)
@@ -3140,7 +3188,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         const refreshedPortfolio = await fetchOwnerPortfolio(auth.token)
         setPortfolio(refreshedPortfolio)
         const refreshedPaths = await fetchProjectLearningPaths(ownerUsername)
-        setProjectPaths(refreshedPaths)
+        setProjectPaths(mergeProtectedStageUpdates(refreshedPaths))
       }
       setStageStatusByRepo((prev) => ({
         ...prev,
@@ -3193,7 +3241,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       }
       try {
         const projectPath = await fetchProjectLearningPaths(ownerUsername)
-        setProjectPaths(projectPath)
+        setProjectPaths(mergeProtectedStageUpdates(projectPath))
       } catch {
         setProjectPaths(null)
         setProjectPathError("Insights were recomputed, but repo learning paths could not be loaded. Showing fallback milestones for now.")
@@ -4740,7 +4788,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                             delete_all: true,
                           })
                           const refreshed = await fetchProjectLearningPaths(targetUsername)
-                          setProjectPaths(refreshed)
+                          setProjectPaths(mergeProtectedStageUpdates(refreshed))
                           const refreshedProject = (refreshed.projects || []).find((project: { repo_name: string }) =>
                             normalizeStorageKey(project.repo_name) === normalizeStorageKey(adminFeedbackViewer.repoName)
                           )
@@ -4780,7 +4828,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                                   updated_at: entry.updated_at || "",
                                 })
                                 const refreshed = await fetchProjectLearningPaths(targetUsername)
-                                setProjectPaths(refreshed)
+                                setProjectPaths(mergeProtectedStageUpdates(refreshed))
                                 const refreshedProject = (refreshed.projects || []).find((project: { repo_name: string }) =>
                                   normalizeStorageKey(project.repo_name) === normalizeStorageKey(adminFeedbackViewer.repoName)
                                 )
@@ -4844,7 +4892,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                       onClick={async () => {
                         await saveAdminStageFeedback(adminFeedbackViewer.repoName, adminFeedbackViewer.stageTitle)
                         const refreshed = await fetchProjectLearningPaths(targetUsername)
-                        setProjectPaths(refreshed)
+                        setProjectPaths(mergeProtectedStageUpdates(refreshed))
                         const refreshedProject = (refreshed.projects || []).find((project: { repo_name: string }) =>
                           normalizeStorageKey(project.repo_name) === normalizeStorageKey(adminFeedbackViewer.repoName)
                         )
