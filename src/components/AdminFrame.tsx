@@ -261,26 +261,26 @@ export default function AdminFrame({ children, showBuiltInToolbar = true }: Admi
   return (
     <div className="admin-app-root min-h-screen text-[#111827]">
       <div className="admin-grid-shell mx-auto flex min-h-screen max-w-[1680px] gap-6 px-4 py-4 lg:px-6 lg:py-6">
-        <aside className="hidden w-[292px] shrink-0 xl:block">
+        <aside className="hidden w-[272px] shrink-0 xl:block">
           <motion.div
             initial={{ opacity: 0, x: -18 }}
             animate={{ opacity: 1, x: 0, transition: { duration: 0.4 } }}
-            className="admin-sidebar-panel sticky top-6 flex min-h-[calc(100vh-48px)] flex-col rounded-[28px] border border-[#d9e2ec] bg-[#f8fafc] p-4 shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
+            className="admin-sidebar-panel sticky top-6 flex h-[calc(100vh-48px)] max-h-[calc(100vh-48px)] flex-col overflow-hidden rounded-[20px] border border-[#d9e2ec] bg-[#f8fafc] p-3 shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
           >
-            <motion.div whileHover={{ y: -2 }} className="rounded-[22px] border border-[#e3e8ef] bg-white p-4">
+            <motion.div whileHover={{ y: -1 }} className="shrink-0 rounded-[16px] border border-[#e3e8ef] bg-white p-3">
               <div className="flex items-start gap-3">
-                <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[16px] border border-[#dbe4ee] bg-[#f8fafc]">
-                  <img src="/lspu logo.png" alt="LSPU" className="h-10 w-10 object-cover" />
+                <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#dbe4ee] bg-[#f8fafc]">
+                  <img src="/lspu logo.png" alt="LSPU" className="h-8 w-8 object-cover" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#98a2b3]">Admin console</p>
                   <p className="mt-1 text-base font-semibold text-[#111827]">Admin Console</p>
-                  <p className="mt-1 text-sm leading-5 text-[#667085]">Students, evaluations, and oversight tools.</p>
+                  <p className="mt-1 text-xs leading-5 text-[#667085]">Students, evaluations, and oversight tools.</p>
                 </div>
               </div>
             </motion.div>
 
-            <nav className="mt-4 space-y-2" aria-label="Admin">
+            <nav className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1" aria-label="Admin">
               <AdminSidebarNavItem to="/admin" end eyebrow="HQ" label="Dashboard" icon={<DashboardIcon />} />
               <AdminSidebarNavItem to="/admin/students" eyebrow="ST" label="Students" icon={<StudentsIcon />} count={studentNotificationCount} />
               <AdminSidebarNavItem to="/admin/certificates" eyebrow="CR" label="Certificates" icon={<CertificateIcon />} count={certificateNotificationCount} />
@@ -288,13 +288,13 @@ export default function AdminFrame({ children, showBuiltInToolbar = true }: Admi
               <AdminSidebarNavItem to="/admin/leaderboard" eyebrow="LB" label="Leaderboard" icon={<LeaderboardIcon />} />
             </nav>
 
-            <motion.div whileHover={{ y: -2 }} className="mt-auto rounded-[22px] border border-[#e3e8ef] bg-white p-4">
+            <motion.div whileHover={{ y: -1 }} className="mt-3 shrink-0 rounded-[16px] border border-[#e3e8ef] bg-white p-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#98a2b3]">Session</p>
               <p className="mt-2 text-sm font-semibold text-[#111827]">{auth.username || "Admin"}</p>
-              <p className="mt-1 text-sm leading-5 text-[#667085]">Use the admin panel to review student records and maintain data quality.</p>
+              <p className="mt-1 text-xs leading-5 text-[#667085]">Review student records and maintain data quality.</p>
               <button
                 type="button"
-                className="mt-4 w-full rounded-[16px] border border-[#efb4b4] bg-[#c62828] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#b71c1c]"
+                className="mt-3 w-full rounded-[12px] border border-[#efb4b4] bg-[#c62828] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#b71c1c]"
                 onClick={() => signOutAdmin("/")}
               >
                 Logout
