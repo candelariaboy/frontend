@@ -2157,10 +2157,11 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     repoName: string,
     stageTitle: string,
     proofItem?: { name?: string | null; url?: string | null },
-    statusOverride?: "pending" | "accepted" | "rejected"
+    statusOverride?: "pending" | "accepted" | "rejected",
+    draftKeyOverride?: string
   ) {
     if (!adminView || !adminAuth.token || !targetUsername) return
-    const draftKey = proofItem?.url ? `${stageTitle}::${proofItem.url}` : stageTitle
+    const draftKey = draftKeyOverride || (proofItem?.url ? `${stageTitle}::${proofItem.url}` : stageTitle)
     const feedback = String(adminFeedbackDraftByRepo[repoName]?.[draftKey] || "").trim()
     if (!feedback && !statusOverride) {
       setProjectPathError("Write a short feedback message or choose a review status first.")
@@ -4919,6 +4920,9 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
           new Set((selectedEntry?.proof_items || []).map((item) => String(item.url || "").trim()).filter(Boolean))
         )
         const activeProofUrl = activeProofItem?.url || selectedEntryProofUrls[0] || ""
+        const activeCommentProofItem =
+          activeProofItem ||
+          (activeProofUrl ? { name: activeTitle, url: activeProofUrl } : undefined)
         const seedCommentEntry = proofViewer.comment
           ? {
               feedback: proofViewer.comment,
@@ -5246,7 +5250,15 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                           <button
                             type="button"
                             disabled={savingAdminFeedbackKey === `${proofViewer.repoName}::${proofViewer.stageTitle}` || !String(adminFeedbackDraftByRepo[proofViewer.repoName]?.[activeDraftKey] || "").trim()}
-                            onClick={() => void saveAdminStageFeedback(proofViewer.repoName, proofViewer.stageTitle, activeProofItem || undefined)}
+                            onClick={() =>
+                              void saveAdminStageFeedback(
+                                proofViewer.repoName,
+                                proofViewer.stageTitle,
+                                activeCommentProofItem,
+                                undefined,
+                                activeDraftKey
+                              )
+                            }
                             className="rounded-full bg-[#b45454] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-60"
                           >
                             {savingAdminFeedbackKey === `${proofViewer.repoName}::${proofViewer.stageTitle}` ? "Saving..." : "Save comment"}
@@ -5274,7 +5286,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                           <button
                             type="button"
                             disabled={savingStudentReplyKey === `${proofViewer.repoName}::${proofViewer.stageTitle}::${activeDraftKey}` || !String(studentReplyDraftByRepo[proofViewer.repoName]?.[activeDraftKey] || "").trim()}
-                            onClick={() => void saveStudentStageFeedbackReply(proofViewer.repoName, proofViewer.stageTitle, activeDraftKey, activeProofItem || undefined)}
+                            onClick={() => void saveStudentStageFeedbackReply(proofViewer.repoName, proofViewer.stageTitle, activeDraftKey, activeCommentProofItem)}
                             className="rounded-full bg-[#3b82f6] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-60"
                           >
                             {savingStudentReplyKey === `${proofViewer.repoName}::${proofViewer.stageTitle}::${activeDraftKey}` ? "Saving..." : "Save comment"}
