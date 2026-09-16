@@ -25,6 +25,11 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -969,6 +974,8 @@ img {
 .admin-grid-shell {
   position: relative;
   z-index: 1;
+  width: 100%;
+  overflow-x: clip;
 }
 
 .admin-panel {
