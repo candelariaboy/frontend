@@ -1355,6 +1355,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   const previousUnreadNotificationCountRef = useRef(0)
   const recomputingRef = useRef(false)
   const optimisticStageChecksRef = useRef<Record<string, boolean[]>>({})
+  const optimisticStageCheckTimersRef = useRef<Record<string, number>>({})
   const storageUsernameKey = normalizeStorageKey(portfolio?.profile?.username || targetUsername)
 
   function bumpNotificationVersion() {
@@ -1377,6 +1378,35 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
 
   function stageItemWarningKey(repoName: string, stageTitle: string, itemIndex: number) {
     return `${stageStateKey(repoName, stageTitle)}::${itemIndex}`
+  }
+
+  function checksEqual(left: boolean[], right: boolean[]) {
+    return left.length === right.length && left.every((value, index) => value === right[index])
+  }
+
+  function protectStageChecks(repoName: string, stageTitle: string, checks: boolean[]) {
+    const stageKey = stageStateKey(repoName, stageTitle)
+    const existingTimer = optimisticStageCheckTimersRef.current[stageKey]
+    if (existingTimer) {
+      window.clearTimeout(existingTimer)
+    }
+    optimisticStageChecksRef.current[stageKey] = checks
+    optimisticStageCheckTimersRef.current[stageKey] = window.setTimeout(() => {
+      delete optimisticStageChecksRef.current[stageKey]
+      delete optimisticStageCheckTimersRef.current[stageKey]
+    }, 15000)
+  }
+
+  function releaseStageChecksIfSynced(repoName: string, stageTitle: string, backendChecks: boolean[]) {
+    const stageKey = stageStateKey(repoName, stageTitle)
+    const optimisticChecks = optimisticStageChecksRef.current[stageKey]
+    if (!optimisticChecks || !checksEqual(optimisticChecks, backendChecks)) return
+    const existingTimer = optimisticStageCheckTimersRef.current[stageKey]
+    if (existingTimer) {
+      window.clearTimeout(existingTimer)
+    }
+    delete optimisticStageChecksRef.current[stageKey]
+    delete optimisticStageCheckTimersRef.current[stageKey]
   }
 
   function triggerStageItemWarning(repoName: string, stageTitle: string, itemIndex: number) {
@@ -1527,8 +1557,16 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         Object.entries(optimisticStageChecksRef.current).forEach(([key, optimisticChecks]) => {
           const [repoKey, stageKey] = key.split("::")
           if (repoKey !== normalizeStorageKey(project.repo_name)) return
+          const matchingBackendTitle = Object.keys(checks).find((title) => normalizeStorageKey(title) === stageKey)
+          if (matchingBackendTitle) {
+            const backendChecks = normalizeStageChecks(optimisticChecks.map((_, index) => String(index)), checks[matchingBackendTitle])
+            if (checksEqual(optimisticChecks, backendChecks)) {
+              releaseStageChecksIfSynced(project.repo_name, matchingBackendTitle, backendChecks)
+              return
+            }
+          }
           const stageTitle =
-            Object.keys(checks).find((title) => normalizeStorageKey(title) === stageKey) ||
+            matchingBackendTitle ||
             Object.keys(localChecks).find((title) => normalizeStorageKey(title) === stageKey) ||
             stageKey
           checks[stageTitle] = optimisticChecks
@@ -1832,6 +1870,14 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     return
   }, [adminView, stageProofStatusByRepo, storageUsernameKey])
 
+  useEffect(() => {
+    return () => {
+      Object.values(optimisticStageCheckTimersRef.current).forEach((timerId) => window.clearTimeout(timerId))
+      optimisticStageCheckTimersRef.current = {}
+      optimisticStageChecksRef.current = {}
+    }
+  }, [])
+
   async function handleStageStatusChange(
     repoName: string,
     stageTitle: string,
@@ -1846,6 +1892,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       },
     }))
     if (adminView || !auth.token) return
+    patchProjectPathStageState(repoName, stageTitle, nextStatus, options)
     try {
       await updateProjectStageStatus(auth.token, {
         repo_name: repoName,
@@ -1914,7 +1961,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     setBusyStageKeys((prev) => ({ ...prev, [stageKey]: true }))
     try {
       const nextChecks = currentChecks.map((checked, index) => (index === itemIndex ? !checked : checked))
-      optimisticStageChecksRef.current[stageKey] = nextChecks
+      protectStageChecks(repoName, stageTitle, nextChecks)
       setStageChecksByRepo((prev) => ({
         ...prev,
         [repoName]: {
@@ -1936,7 +1983,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         proofCount,
       })
     } finally {
-      delete optimisticStageChecksRef.current[stageKey]
       setBusyStageKeys((prev) => {
         const next = { ...prev }
         delete next[stageKey]
