@@ -260,12 +260,12 @@ export default function AdminFrame({ children, showBuiltInToolbar = true }: Admi
 
   return (
     <div className="admin-app-root min-h-screen text-[#111827]">
-      <div className="admin-grid-shell mx-auto flex min-h-screen max-w-[1680px] gap-6 px-4 py-4 lg:px-6 lg:py-6">
-        <aside className="hidden w-[272px] shrink-0 xl:block">
+      <div className="admin-grid-shell mx-auto flex min-h-screen max-w-[1680px] gap-6 px-4 py-4 lg:px-6 lg:py-6 xl:pl-[320px]">
+        <aside className="hidden xl:fixed xl:inset-y-6 xl:left-6 xl:z-30 xl:block xl:w-[272px]">
           <motion.div
             initial={{ opacity: 0, x: -18 }}
             animate={{ opacity: 1, x: 0, transition: { duration: 0.4 } }}
-            className="admin-sidebar-panel sticky top-6 flex h-[calc(100vh-48px)] max-h-[calc(100vh-48px)] flex-col overflow-hidden rounded-[20px] border border-[#d9e2ec] bg-[#f8fafc] p-3 shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
+            className="admin-sidebar-panel flex h-full max-h-full flex-col overflow-hidden rounded-[20px] border border-[#d9e2ec] bg-[#f8fafc] p-3 shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
           >
             <motion.div whileHover={{ y: -1 }} className="shrink-0 rounded-[16px] border border-[#e3e8ef] bg-white p-3">
               <div className="flex items-start gap-3">
