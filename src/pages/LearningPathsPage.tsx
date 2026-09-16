@@ -1672,7 +1672,8 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   function patchProjectPathStageUpdate(
     repoName: string,
     stageTitle: string,
-    updater: (current: Record<string, unknown>) => Record<string, unknown>
+    updater: (current: Record<string, unknown>) => Record<string, unknown>,
+    options: { protect?: boolean } = {}
   ) {
     setProjectPaths((prev) => {
       if (!prev?.projects?.length) return prev
@@ -1686,6 +1687,9 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         const nextUpdate = updater(
           currentUpdate && typeof currentUpdate === "object" ? (currentUpdate as Record<string, unknown>) : {}
         )
+        if (options.protect !== false) {
+          protectStageUpdate(repoName, stageTitle, nextUpdate)
+        }
         stageUpdates[stageTitle] = nextUpdate
         changed = true
         return { ...project, stage_progress_updates: stageUpdates }
