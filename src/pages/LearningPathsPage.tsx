@@ -1249,28 +1249,6 @@ function progressProofLabel(items?: Array<{ name?: string | null }>, fallback?: 
   return `${firstName || fallback || "Update"} +${proofItems.length - 1} more`
 }
 
-function summarizeEvidenceKinds(items: Array<{ kind?: string | null }>) {
-  const counts = {
-    image: 0,
-    video: 0,
-    pdf: 0,
-    file: 0,
-  }
-  items.forEach((item) => {
-    const kind = String(item.kind || "file").trim().toLowerCase()
-    if (kind === "image") counts.image += 1
-    else if (kind === "video") counts.video += 1
-    else if (kind === "pdf") counts.pdf += 1
-    else counts.file += 1
-  })
-  return [
-    counts.video ? `${counts.video} video${counts.video === 1 ? "" : "s"}` : "",
-    counts.image ? `${counts.image} image${counts.image === 1 ? "" : "s"}` : "",
-    counts.pdf ? `${counts.pdf} pdf${counts.pdf === 1 ? "" : "s"}` : "",
-    counts.file ? `${counts.file} file${counts.file === 1 ? "" : "s"}` : "",
-  ].filter(Boolean).join(", ")
-}
-
 function formatRealtimeStamp(value?: string | null) {
   if (!value) return "-"
   const normalized = /z$|[+-]\d{2}:\d{2}$/i.test(value) ? value : `${value}Z`
@@ -1322,7 +1300,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   const [evidenceNameDraftByRepo, setEvidenceNameDraftByRepo] = useState<Record<string, string>>({})
   const [evidenceLinkDraftByRepo, setEvidenceLinkDraftByRepo] = useState<Record<string, string>>({})
   const [stageUpdateCommentByRepo, setStageUpdateCommentByRepo] = useState<Record<string, Record<string, string>>>({})
-  const [stageUpdateFilesByRepo, setStageUpdateFilesByRepo] = useState<Record<string, Record<string, EvidenceItem[]>>>({})
   const [stageUpdateLinkNameDraftByRepo, setStageUpdateLinkNameDraftByRepo] = useState<Record<string, Record<string, string>>>({})
   const [stageUpdateLinkDraftByRepo, setStageUpdateLinkDraftByRepo] = useState<Record<string, Record<string, string>>>({})
   const [savingStageUpdateKey, setSavingStageUpdateKey] = useState("")
@@ -1733,60 +1710,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     })
   }
 
-  function addStageUpdateLink(repoName: string, stageTitle: string, rawName: string, rawUrl: string) {
-    const nextItem = buildProofLinkItem(rawName, rawUrl, `${stageTitle} proof`)
-    if (!nextItem) return false
-    setStageUpdateFilesByRepo((prev) => {
-      const repoDrafts = prev[repoName] || {}
-      const existing = repoDrafts[stageTitle] || []
-      const byKey = new Map<string, EvidenceItem>()
-      existing.forEach((item) => byKey.set(evidenceItemKey(item), item))
-      const key = evidenceItemKey(nextItem)
-      if (!byKey.has(key)) byKey.set(key, nextItem)
-      return {
-        ...prev,
-        [repoName]: {
-          ...repoDrafts,
-          [stageTitle]: Array.from(byKey.values()),
-        },
-      }
-    })
-    setStageUpdateLinkNameDraftByRepo((prev) => ({
-      ...prev,
-      [repoName]: {
-        ...(prev[repoName] || {}),
-        [stageTitle]: "",
-      },
-    }))
-    setStageUpdateLinkDraftByRepo((prev) => ({
-      ...prev,
-      [repoName]: {
-        ...(prev[repoName] || {}),
-        [stageTitle]: "",
-      },
-    }))
-    return true
-  }
-
-  function removeStageUpdateFile(repoName: string, stageTitle: string, key: string) {
-    setStageUpdateFilesByRepo((prev) => {
-      const repoDrafts = prev[repoName] || {}
-      const existing = repoDrafts[stageTitle] || []
-      const nextItems = existing.filter((item) => evidenceItemKey(item) !== key)
-      const nextRepoDrafts = { ...repoDrafts }
-      if (nextItems.length) nextRepoDrafts[stageTitle] = nextItems
-      else delete nextRepoDrafts[stageTitle]
-      if (!Object.keys(nextRepoDrafts).length) {
-        const { [repoName]: _removed, ...rest } = prev
-        return rest
-      }
-      return {
-        ...prev,
-        [repoName]: nextRepoDrafts,
-      }
-    })
-  }
-
   useEffect(() => {
     if (!projectPaths?.projects?.length || !targetUsername) return
     const unreadCount = adminView
@@ -2048,8 +1971,12 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     if (adminView || !auth.token) return
     const updateKey = `${repoName}::${stageTitle}`
     const comment = String(stageUpdateCommentByRepo[repoName]?.[stageTitle] || "").trim()
-    const files = stageUpdateFilesByRepo[repoName]?.[stageTitle] || []
-    const combinedItems = [...files]
+    const draftProof = buildProofLinkItem(
+      stageUpdateLinkNameDraftByRepo[repoName]?.[stageTitle] || "",
+      stageUpdateLinkDraftByRepo[repoName]?.[stageTitle] || "",
+      `${stageTitle} proof`
+    )
+    const combinedItems = draftProof ? [draftProof] : []
     if (!comment && !combinedItems.length) {
       setProjectPathError("Add a short comment or at least one proof link before posting an update.")
       return
@@ -2100,20 +2027,14 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         setProjectPaths(merged)
         syncStageTrackingFromProjectPaths(merged)
       }
-      setStageUpdateFilesByRepo((prev) => {
-        const repoDrafts = prev[repoName] || {}
-        const nextRepoDrafts = { ...repoDrafts }
-        delete nextRepoDrafts[stageTitle]
-        if (!Object.keys(nextRepoDrafts).length) {
-          const { [repoName]: _removed, ...rest } = prev
-          return rest
-        }
-        return {
-          ...prev,
-          [repoName]: nextRepoDrafts,
-        }
-      })
       setStageUpdateLinkDraftByRepo((prev) => ({
+        ...prev,
+        [repoName]: {
+          ...(prev[repoName] || {}),
+          [stageTitle]: "",
+        },
+      }))
+      setStageUpdateLinkNameDraftByRepo((prev) => ({
         ...prev,
         [repoName]: {
           ...(prev[repoName] || {}),
@@ -3337,10 +3258,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         ...prev,
         [repoName]: {},
       }))
-      setStageUpdateFilesByRepo((prev) => ({
-        ...prev,
-        [repoName]: {},
-      }))
       setProofViewer(null)
       setExpandedProofItem(null)
       const claimedXp = Number(result?.claimed_xp || totalXp || 0)
@@ -4217,7 +4134,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                 const rawProgressProofItems = latestProgressArchiveEntry?.proof_items || savedStageUpdate?.proof_items || []
                 const progressProofItems = rawProgressProofItems
                 const stageBusy = Boolean(busyStageKeys[stageStateKey(activeRoadmap.repoName, stage.title)])
-                const draftStageFiles = stageUpdateFilesByRepo[activeRoadmap.repoName]?.[stage.title] || []
                 const draftStageLinkName = stageUpdateLinkNameDraftByRepo[activeRoadmap.repoName]?.[stage.title] || ""
                 const draftStageLinks = stageUpdateLinkDraftByRepo[activeRoadmap.repoName]?.[stage.title] || ""
                 const draftStageComment = stageUpdateCommentByRepo[activeRoadmap.repoName]?.[stage.title] || ""
@@ -4626,89 +4542,18 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                               placeholder="Paste one shareable proof URL"
                             />
                             <p className="text-[11px] text-[#667085]">
-                              Add a shareable proof link here and give it a clear name so the admin knows what the proof is.
-                              The text in `What are you working on now?` will be posted together with these links after you click `Post update`.
+                              Add a note, a proof URL, or both. This update will be saved directly to the Progress Proof Archive.
                             </p>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const added = addStageUpdateLink(
-                                  activeRoadmap.repoName,
-                                  stage.title,
-                                  draftStageLinkName,
-                                  draftStageLinks
-                                )
-                                if (!added) {
-                                  setProjectPathError("Paste at least one valid proof URL first.")
-                                }
-                              }}
-                              className="rounded-full border border-[#cfd6ff] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#3b3a70] shadow-sm"
-                            >
-                              Add link to this update
-                            </button>
-                            {draftStageFiles.length ? (
-                              <p className="text-[11px] font-semibold text-[#475467]">
-                                {draftStageFiles.length} link{draftStageFiles.length === 1 ? "" : "s"} ready{summarizeEvidenceKinds(draftStageFiles) ? `: ${summarizeEvidenceKinds(draftStageFiles)}` : ""}.
-                                {draftStageComment.trim() ? " Your progress note is included in this pending update." : ""}
-                              </p>
-                            ) : null}
                             <button
                               type="button"
                               disabled={isSavingStageUpdate}
                               onClick={() => void saveStageProgressUpdate(activeRoadmap.repoName, stage.title)}
                               className="rounded-full border border-[#d7dee8] bg-[#eef2ff] px-3 py-1.5 text-[11px] font-semibold text-[#2f3a8c] disabled:opacity-60"
                             >
-                              {isSavingStageUpdate ? "Posting..." : "Post update with note and links"}
+                              {isSavingStageUpdate ? "Posting..." : "Post Update"}
                             </button>
                           </div>
                         </div>
-                        {draftStageFiles.length ? (
-                          <div className="mt-3 rounded-[10px] border border-[#e4e7ec] bg-white p-3">
-                            <div className="mb-3 flex items-center justify-between gap-2">
-                              <p className="text-[11px] font-semibold text-[#344054]">Pending update bundle</p>
-                              <span className="rounded-full bg-[#f2f4f7] px-2.5 py-1 text-[10px] font-semibold text-[#475467]">
-                                {draftStageFiles.length} attached
-                              </span>
-                            </div>
-                            <div className="mb-3 rounded-[10px] border border-[#e4e7ec] bg-[#fffaf0] px-3 py-3">
-                              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">What will be posted</p>
-                              <p className="mt-2 text-[11px] leading-5 text-[#344054]">
-                                {draftStageComment.trim()
-                                  ? "Your note and the selected links will be saved together when you click `Post update with note and links`."
-                                  : "The selected links will be saved when you click `Post update with note and links`."}
-                              </p>
-                            </div>
-                            <p className="mb-2 text-[11px] font-semibold text-[#344054]">Selected links</p>
-                            <div className="space-y-2">
-                            {draftStageFiles.map((item) => {
-                              const itemKey = evidenceItemKey(item)
-                              return (
-                                <div key={`${stage.title}-draft-${itemKey}`} className="flex items-start justify-between gap-3 rounded-[10px] border border-[#e4e7ec] bg-[#f8fafc] px-3 py-2">
-                                  <div className="min-w-0 flex-1">
-                                    <p className="truncate text-[11px] font-semibold text-[#344054]">{item.name}</p>
-                                    <p className="break-all text-[10px] leading-5 text-[#667085]">
-                                      {item.url} / {evidenceKindLabel(item.kind)}
-                                    </p>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeStageUpdateFile(activeRoadmap.repoName, stage.title, itemKey)}
-                                    className="shrink-0 self-start rounded-full border border-[#d0d5dd] bg-white px-2 py-1 text-[10px] font-semibold text-[#667085] hover:text-[#111827]"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              )
-                            })}
-                            </div>
-                            {draftStageComment.trim() ? (
-                              <div className="mt-3 rounded-[10px] border border-[#e4e7ec] bg-[#f8fafc] px-3 py-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">Current update note</p>
-                                <p className="mt-2 whitespace-pre-wrap text-[11px] leading-5 text-[#344054]">{draftStageComment}</p>
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : null}
                       </div>
                     ) : null}
 
