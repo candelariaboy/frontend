@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
     try {
       const result = await adminLogin({ username: usernameValue, password: passwordValue })
       setStoredAdminAuth(result.token || "", result.username || usernameValue)
-      navigate("/admin")
+      window.location.assign("/admin")
     } catch (error) {
       if (error instanceof Error && error.message.trim()) {
         if (error.message === "Failed to fetch") {

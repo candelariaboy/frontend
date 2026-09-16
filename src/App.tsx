@@ -31,6 +31,17 @@ function AdminOutlet() {
   return <Outlet key={pathname} />
 }
 
+function RouteFallback() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-[#f7f1e7] px-4 text-center">
+      <div className="rounded-[20px] border border-[#e3d8c5] bg-white/85 px-6 py-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#98a2b3]">Loading</p>
+        <p className="mt-2 text-sm font-semibold text-[#111827]">Opening workspace...</p>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -109,7 +120,7 @@ export default function App() {
   }, [isAdminRoute, isPublicPortfolio, location.pathname])
 
   const routesNode = (
-    <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+    <Suspense fallback={<RouteFallback />}>
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/admin-login" element={<AdminLoginPage />} />
