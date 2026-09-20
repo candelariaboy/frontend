@@ -1518,6 +1518,16 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         if (url) urls.add(url)
       })
     })
+    if (viewer.adminFeedbackByProof && typeof viewer.adminFeedbackByProof === "object") {
+      Object.entries(viewer.adminFeedbackByProof).forEach(([key, value]) => {
+        const directUrl = String(key || "").trim()
+        if (directUrl) urls.add(directUrl)
+        ;(value?.thread || []).forEach((entry) => {
+          const threadUrl = String(entry.proof_url || "").trim()
+          if (threadUrl) urls.add(threadUrl)
+        })
+      })
+    }
     return Array.from(urls)
   }
 
@@ -1797,6 +1807,17 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         : []
       return proofViewer.proofLabel === "Final stage proof" ? rawFinalProofItems : rawProgressProofItems
     })()
+    markCurrentStageNotificationsSeen(proofViewer.repoName, proofViewer.stageTitle)
+    getProofViewerUrls({
+      ...proofViewer,
+      selectedEntryId: nextSelectedEntry?.entry_id || proofViewer.selectedEntryId,
+      progressEntries: nextProgressEntries.length ? nextProgressEntries : proofViewer.progressEntries,
+      proofItems: nextProofItems,
+      adminFeedbackThread: thread,
+      adminFeedbackByProof: byProof,
+    }).forEach((proofUrl) => {
+      markCurrentProofNotificationsSeen(proofViewer.repoName, proofViewer.stageTitle, proofUrl)
+    })
     setProofViewer((prev) => {
       if (!prev) return prev
       return {
