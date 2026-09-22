@@ -1452,6 +1452,10 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   const [evidenceByRepo, setEvidenceByRepo] = useState<Record<string, EvidenceItem[]>>({})
   const [evidenceNameDraftByRepo, setEvidenceNameDraftByRepo] = useState<Record<string, string>>({})
   const [evidenceLinkDraftByRepo, setEvidenceLinkDraftByRepo] = useState<Record<string, string>>({})
+  const [stageUpdateCommentByRepo, setStageUpdateCommentByRepo] = useState<Record<string, Record<string, string>>>({})
+  const [stageUpdateLinkNameDraftByRepo, setStageUpdateLinkNameDraftByRepo] = useState<Record<string, Record<string, string>>>({})
+  const [stageUpdateLinkDraftByRepo, setStageUpdateLinkDraftByRepo] = useState<Record<string, Record<string, string>>>({})
+  const [savingStageUpdateKey, setSavingStageUpdateKey] = useState("")
   const [savingAdminFeedbackKey, setSavingAdminFeedbackKey] = useState("")
   const [savingStudentReplyKey, setSavingStudentReplyKey] = useState("")
   const [savingEvidenceRepoKey, setSavingEvidenceRepoKey] = useState("")
@@ -2150,6 +2154,94 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         delete next[stageKey]
         return next
       })
+    }
+  }
+
+  async function saveStageProgressUpdate(repoName: string, stageTitle: string) {
+    if (adminView || !auth.token) return
+    const updateKey = `${repoName}::${stageTitle}`
+    const comment = String(stageUpdateCommentByRepo[repoName]?.[stageTitle] || "").trim()
+    const draftProof = buildProofLinkItem(
+      stageUpdateLinkNameDraftByRepo[repoName]?.[stageTitle] || "",
+      stageUpdateLinkDraftByRepo[repoName]?.[stageTitle] || "",
+      `${stageTitle} proof`
+    )
+    const combinedItems = draftProof ? [draftProof] : []
+    if (!comment && !combinedItems.length) {
+      setProjectPathError("Add a short comment or at least one proof link before posting an update.")
+      return
+    }
+
+    setSavingStageUpdateKey(updateKey)
+    setProjectPathError("")
+    setStageUpdateToast("")
+    try {
+      const uploadedItems: StageUpdateAttachment[] = combinedItems.map((item) => ({
+        name: item.name,
+        url: String(item.url || "").trim(),
+        kind: item.kind,
+      }))
+      const updated = await updateProjectStageProgressUpdate(auth.token, {
+        repo_name: repoName,
+        stage_title: stageTitle,
+        comment,
+        proof_items: uploadedItems,
+      })
+      if (updated && typeof updated === "object") {
+        protectStageUpdate(repoName, stageTitle, updated as Record<string, unknown>)
+        patchProjectPathStageUpdate(repoName, stageTitle, (current) => ({
+          ...current,
+          ...(updated as Record<string, unknown>),
+        }))
+      }
+      setStageUpdateCommentByRepo((prev) => ({
+        ...prev,
+        [repoName]: {
+          ...(prev[repoName] || {}),
+          [stageTitle]: "",
+        },
+      }))
+      const targetRoadmap = roadmaps.find((roadmap) => roadmap.repoName === repoName)
+      const targetStage = targetRoadmap?.stages.find((stage) => stage.title === stageTitle)
+      const checks = getResolvedStageChecks(repoName, stageTitle, targetStage?.items || [])
+      const savedProofCount = countSavedStageProgressProofItems(updated as Record<string, unknown>)
+      const nextStatus =
+        checks.length > 0 && checks.every(Boolean) && hasRequiredStageProgressProof(targetStage?.items || [], savedProofCount)
+          ? "complete_stage"
+          : "in_progress"
+      await handleStageStatusChange(repoName, stageTitle, nextStatus, { checks, proofCount: savedProofCount })
+      const ownerUsername = portfolio?.profile?.username || auth.username
+      if (ownerUsername) {
+        const refreshed = await fetchProjectLearningPaths(ownerUsername)
+        const merged = mergeProtectedStageUpdates(refreshed)
+        setProjectPaths(merged)
+        syncStageTrackingFromProjectPaths(merged)
+      }
+      setStageUpdateLinkDraftByRepo((prev) => ({
+        ...prev,
+        [repoName]: {
+          ...(prev[repoName] || {}),
+          [stageTitle]: "",
+        },
+      }))
+      setStageUpdateLinkNameDraftByRepo((prev) => ({
+        ...prev,
+        [repoName]: {
+          ...(prev[repoName] || {}),
+          [stageTitle]: "",
+        },
+      }))
+      setStageUpdateToast(
+        uploadedItems.length > 1
+          ? `Stage proof saved with ${uploadedItems.length} links.`
+          : uploadedItems.length === 1
+            ? "Stage proof saved with 1 link."
+            : "Stage note saved to this stage archive."
+      )
+    } catch (err) {
+      setProjectPathError(err instanceof Error ? err.message : "Progress update could not be posted right now.")
+    } finally {
+      setSavingStageUpdateKey("")
     }
   }
 
@@ -3341,6 +3433,10 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         ...prev,
         [repoName]: {},
       }))
+      setStageUpdateCommentByRepo((prev) => ({
+        ...prev,
+        [repoName]: {},
+      }))
       setProofViewer(null)
       setExpandedProofItem(null)
       const claimedXp = Number(result?.claimed_xp || totalXp || 0)
@@ -4225,7 +4321,15 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
               {activeStages.map((stage, index) => {
                 const styles = stageStyles(stage.status)
                 const savedStageUpdate = getRecordValue(activeProjectPath?.stage_progress_updates, stage.title)
+                const progressArchiveEntries = normalizeStageProgressEntries(savedStageUpdate)
+                const latestProgressArchiveEntry = progressArchiveEntries[progressArchiveEntries.length - 1] || null
+                const rawProgressProofItems = latestProgressArchiveEntry?.proof_items || savedStageUpdate?.proof_items || []
+                const progressProofItems = rawProgressProofItems
                 const stageBusy = Boolean(busyStageKeys[stageStateKey(activeRoadmap.repoName, stage.title)])
+                const draftStageLinkName = stageUpdateLinkNameDraftByRepo[activeRoadmap.repoName]?.[stage.title] || ""
+                const draftStageLinks = stageUpdateLinkDraftByRepo[activeRoadmap.repoName]?.[stage.title] || ""
+                const draftStageComment = stageUpdateCommentByRepo[activeRoadmap.repoName]?.[stage.title] || ""
+                const isSavingStageUpdate = savingStageUpdateKey === `${activeRoadmap.repoName}::${stage.title}`
                 const stageChecks = normalizeStageChecks(stage.items, (stage as StageCard & { checks?: boolean[] }).checks)
                 const stageLocked = Boolean((stage as StageCard & { locked?: boolean }).locked)
                 const stageHasProgressProof = hasSavedStageProgressProof(savedStageUpdate)
@@ -4242,7 +4346,27 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                 const stageNotificationCount = adminView
                   ? getAdminStageNotificationCount(targetUsername, activeRoadmap.repoName, stage.title, savedStageUpdate)
                   : getStudentStageNotificationCount(targetUsername, activeRoadmap.repoName, stage.title, savedStageUpdate)
+                const countProofNotifications = (proofUrl?: string | null) => {
+                  const normalizedProofUrl = String(proofUrl || "").trim()
+                  if (!normalizedProofUrl) return 0
+                  return adminView
+                    ? getAdminProofNotificationCount(targetUsername, activeRoadmap.repoName, stage.title, normalizedProofUrl, savedStageUpdate)
+                    : getStudentProofNotificationCount(targetUsername, activeRoadmap.repoName, stage.title, normalizedProofUrl, savedStageUpdate)
+                }
+                const progressArchiveNotificationCount = progressArchiveEntries.reduce((total, entry) => {
+                  const proofUrls = Array.from(new Set((entry.proof_items || []).map((item) => String(item.url || "").trim()).filter(Boolean)))
+                  return total + proofUrls.reduce((proofTotal, proofUrl) => proofTotal + countProofNotifications(proofUrl), 0)
+                }, 0)
                 const visibleStageNotificationCount = stageNotificationCount
+                const stageStarted = stage.status === "in_progress" || isStageDoneLike(stage.status)
+                const hasSavedStageUpdate = Boolean(latestProgressArchiveEntry?.comment || progressProofItems.length || progressArchiveEntries.length)
+                const showAdminProgressPlaceholder =
+                  adminView && stage.status === "in_progress" && !hasSavedStageUpdate
+                const showOnlyViewProof = !adminView && hasSavedStageUpdate
+                const showSavedProgressArchive = hasSavedStageUpdate || progressArchiveEntries.length > 0
+                const showStageUpdate = adminView
+                  ? showSavedProgressArchive || showAdminProgressPlaceholder
+                  : stageStarted || showSavedProgressArchive
                 const proofRequirements = proofRequirementsForStage(stage, index)
                 const achievementName = achievementForStage(stage, index)
                 return (
@@ -4291,7 +4415,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                         </div>
                       </div>
                     ) : null}
-                    <div className={isVisuallyLocked ? "blur-[2px] select-none" : ""}>
+                    <div className={`${isVisuallyLocked ? "blur-[2px] select-none" : ""} ${!adminView ? "md:grid md:grid-cols-[minmax(0,1fr)_minmax(290px,360px)]" : ""}`}>
                       <div className={`absolute inset-x-0 top-0 h-1 ${styles.accent}`} />
                       <div className={!adminView ? "md:p-5" : ""}>
                         <div className="flex items-start justify-between gap-3">
@@ -4375,18 +4499,12 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                                       : "hover:bg-[#f8fafc]"
                                   } ${stageChecks[itemIndex] ? "text-[#166534]" : "text-[#374151]"} ${showWarningShake ? "stage-output-warning-shake" : ""}`}
                                 >
-                                  <span className={
-                                    stageLocked
-                                      ? "text-[#73776f]"
-                                      : stageChecks[itemIndex] || isStageDoneLike(stage.status)
-                                        ? "text-[#2f7d32]"
-                                        : "text-[#966006]"
-                                  }>
+                                  <span>
                                     {stageLocked ? (
                                       <svg
                                         aria-hidden="true"
                                         viewBox="0 0 24 24"
-                                        className="mt-[1px] h-4 w-4"
+                                        className="mt-[1px] h-4 w-4 text-[#73776f]"
                                         fill="none"
                                         stroke="currentColor"
                                         strokeWidth="2"
@@ -4396,7 +4514,15 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                                         <rect x="5" y="11" width="14" height="10" rx="2" />
                                         <path d="M8 11V8a4 4 0 1 1 8 0v3" />
                                       </svg>
-                                    ) : stageChecks[itemIndex] || isStageDoneLike(stage.status) ? "[x]" : "-"}
+                                    ) : stageChecks[itemIndex] || isStageDoneLike(stage.status) ? (
+                                      <span className="mt-[2px] grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border border-[#16a34a] bg-[#16a34a] text-white shadow-sm">
+                                        <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </span>
+                                    ) : (
+                                      <span className="mt-[2px] h-4 w-4 shrink-0 rounded-[4px] border-2 border-[#94a3b8] bg-white transition hover:border-[#64748b]" />
+                                    )}
                                   </span>
                                   <span className={`font-medium ${stageChecks[itemIndex] || isStageDoneLike(stage.status) ? "line-through decoration-[#86efac]" : ""}`}>
                                     {item}
@@ -4413,7 +4539,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                           </ul>
                         </div>
 
-                        <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
+                        <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px]">
                           <div className="rounded-[10px] border border-[#e2e8f0] bg-[#fbfcfe] p-3">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">Required Proof</p>
                             <ul className="mt-2 space-y-1.5">
@@ -4427,14 +4553,227 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                           </div>
                           <div className="rounded-[10px] border border-[#dcfce7] bg-[#f0fdf4] p-3">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#166534]">Achievement</p>
-                            <p className="mt-2 text-[15px] font-semibold text-[#14532d]">{achievementName}</p>
-                            <p className="mt-1 text-[12px] leading-5 text-[#166534]">
-                              Unlocks when this step is completed with accepted proof.
+                            <p className="mt-1 text-[13px] font-semibold text-[#14532d]">{achievementName}</p>
+                            <p className="mt-0.5 text-[11px] leading-4 text-[#166534]">
+                              Unlocks when completed with proof.
                             </p>
                           </div>
                         </div>
                       </div>
 
+                      <div className={!adminView ? "md:border-l md:border-[#e5eaf2] md:bg-[#fbfdff] md:p-4 md:[&>*:first-child]:mt-0" : ""}>
+                        {!stageLocked ? (
+                          <div className="mt-3 rounded-[12px] border border-[#dbe4ee] bg-white p-3 shadow-sm">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">Suggested resources</p>
+                            <ul className="mt-2 space-y-1">
+                              {stage.resources.map((resource) => (
+                                <li key={`${stage.title}-${resource.url}`} className="text-[12px] text-[#1d4ed8]">
+                                  <a href={resource.url} target="_blank" rel="noreferrer" className="hover:underline">
+                                    {resource.name}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+
+                        {showStageUpdate ? (
+                          <div className={`mt-3 rounded-[12px] border p-3 shadow-sm ${
+                            showAdminProgressPlaceholder
+                              ? "border-[#fecaca] bg-[#fff1f2]"
+                              : showOnlyViewProof
+                                ? "border-[#cfd6ff] bg-[#f5f7ff]"
+                              : "border-[#dbe4ee] bg-[#fbfdff]"
+                          }`}>
+                            {!showOnlyViewProof ? (
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                  <p className={`text-[10px] font-semibold uppercase tracking-[0.08em] ${
+                                    showAdminProgressPlaceholder ? "text-[#b42318]" : "text-[#667085]"
+                                  }`}>
+                                    {showAdminProgressPlaceholder ? "No progress proof posted yet" : "Progress proof archive"}
+                                  </p>
+                                  <p className={`mt-1 text-[12px] ${
+                                    showAdminProgressPlaceholder ? "text-[#7f1d1d]" : "text-[#5b647a]"
+                                  }`}>
+                                    {showAdminProgressPlaceholder
+                                      ? "The student has started this stage, but no progress message or update proof has been saved for admin review yet."
+                                      : "Every posted progress proof is kept here for admin review and archived by update."}
+                                  </p>
+                                </div>
+                                {!adminView && latestProgressArchiveEntry?.updated_at ? (
+                                  <span className="rounded-full border border-[#d7dee8] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#475467]">
+                                    {formatRealtimeStamp(latestProgressArchiveEntry.updated_at)}
+                                  </span>
+                                ) : null}
+                              </div>
+                            ) : null}
+
+                            {latestProgressArchiveEntry?.comment || progressProofItems.length || progressArchiveEntries.length ? (
+                              adminView ? (
+                                <div className="mt-3 rounded-[10px] border border-[#fecaca] bg-[#fff1f2] p-3">
+                                  <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#b42318]">
+                                      Student progress
+                                    </p>
+                                    {progressArchiveEntries.length ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          openProofViewer({
+                                            repoName: activeRoadmap.repoName,
+                                            stageTitle: stage.title,
+                                            selectedEntryId: latestProgressArchiveEntry?.entry_id || null,
+                                            progressEntries: progressArchiveEntries,
+                                            proofLabel: "Progress proof archive",
+                                            fallbackMessage: "The student submitted progress proof for this stage update.",
+                                            comment: latestProgressArchiveEntry?.comment,
+                                            proofItems: progressProofItems,
+                                            updatedAt: latestProgressArchiveEntry?.updated_at,
+                                            adminFeedback: savedStageUpdate?.admin_feedback,
+                                            adminFeedbackBy: savedStageUpdate?.admin_feedback_by,
+                                            adminFeedbackUpdatedAt: savedStageUpdate?.admin_feedback_updated_at,
+                                            adminFeedbackThread: (savedStageUpdate?.admin_feedback_thread || []) as Array<{ feedback: string; by?: string; updated_at?: string }>,
+                                            adminFeedbackByProof: (savedStageUpdate?.admin_feedback_by_proof || {}) as ProofViewerState["adminFeedbackByProof"],
+                                          })
+                                        }
+                                        className="rounded-full border border-[#fecaca] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#b42318] shadow-sm"
+                                      >
+                                        <span className="inline-flex items-center gap-2">
+                                          <span>View archive</span>
+                                          {progressArchiveNotificationCount > 0 ? (
+                                            <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#ef4444] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                              {progressArchiveNotificationCount > 99 ? "99+" : progressArchiveNotificationCount}
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div
+                                  className={`${showOnlyViewProof ? "" : "mt-3"} flex flex-wrap items-center justify-between gap-3 rounded-[10px] ${
+                                    progressArchiveNotificationCount > 0
+                                      ? "border border-[#fecaca] bg-[#fff7f7] px-3 py-2"
+                                      : ""
+                                  }`}
+                                >
+                                  {showOnlyViewProof ? (
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#2f3a8c]">
+                                      Progress Proof Archive
+                                    </p>
+                                  ) : null}
+                                  {progressArchiveNotificationCount > 0 ? (
+                                    <p className="text-[11px] font-semibold text-[#b42318]">
+                                      New admin comment. Open the archive to review and reply.
+                                    </p>
+                                  ) : null}
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        openProofViewer({
+                                          repoName: activeRoadmap.repoName,
+                                          stageTitle: stage.title,
+                                          selectedEntryId: latestProgressArchiveEntry?.entry_id || null,
+                                          progressEntries: progressArchiveEntries,
+                                          proofLabel: "Progress proof archive",
+                                          fallbackMessage: "The student submitted progress proof for this stage update.",
+                                          comment: latestProgressArchiveEntry?.comment,
+                                          proofItems: progressProofItems,
+                                          updatedAt: latestProgressArchiveEntry?.updated_at,
+                                          adminFeedback: savedStageUpdate?.admin_feedback,
+                                          adminFeedbackBy: savedStageUpdate?.admin_feedback_by,
+                                          adminFeedbackUpdatedAt: savedStageUpdate?.admin_feedback_updated_at,
+                                          adminFeedbackThread: (savedStageUpdate?.admin_feedback_thread || []) as Array<{ feedback: string; by?: string; updated_at?: string }>,
+                                          adminFeedbackByProof: (savedStageUpdate?.admin_feedback_by_proof || {}) as ProofViewerState["adminFeedbackByProof"],
+                                        })
+                                      }
+                                      className="rounded-full border border-[#cfd6ff] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#2f3a8c] shadow-sm"
+                                    >
+                                      <span className="inline-flex items-center gap-2">
+                                        <span>View archive</span>
+                                        {progressArchiveNotificationCount > 0 ? (
+                                          <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#ef4444] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                            {progressArchiveNotificationCount > 99 ? "99+" : progressArchiveNotificationCount}
+                                          </span>
+                                        ) : null}
+                                      </span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {!adminView && !stageLocked && showStageUpdate ? (
+                          <div className="mt-3 rounded-[12px] border border-dashed border-[#cfd6e6] bg-white p-3 shadow-sm">
+                            <div className="grid gap-3">
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">What are you working on now?</p>
+                                <textarea
+                                  value={draftStageComment}
+                                  onChange={(event) =>
+                                    setStageUpdateCommentByRepo((prev) => ({
+                                      ...prev,
+                                      [activeRoadmap.repoName]: {
+                                        ...(prev[activeRoadmap.repoName] || {}),
+                                        [stage.title]: event.target.value,
+                                      },
+                                    }))
+                                  }
+                                  className="mt-2 h-20 w-full rounded-[8px] border border-[#d6dcef] bg-white px-3 py-2 text-[12px] text-[#111827] outline-none"
+                                  placeholder="Example: I finished the login flow, added screenshots, and I am now testing the validation behavior."
+                                />
+                              </div>
+                              <div className="flex flex-col items-start gap-2">
+                                <input
+                                  value={draftStageLinkName}
+                                  onChange={(event) =>
+                                    setStageUpdateLinkNameDraftByRepo((prev) => ({
+                                      ...prev,
+                                      [activeRoadmap.repoName]: {
+                                        ...(prev[activeRoadmap.repoName] || {}),
+                                        [stage.title]: event.target.value,
+                                      },
+                                    }))
+                                  }
+                                  className="w-full rounded-[10px] border border-[#cfd6ff] bg-white px-3 py-2 text-[11px] text-[#3b3a70] shadow-sm outline-none"
+                                  placeholder="Proof name (e.g. Login Screenshot)"
+                                />
+                                <textarea
+                                  value={draftStageLinks}
+                                  onChange={(event) =>
+                                    setStageUpdateLinkDraftByRepo((prev) => ({
+                                      ...prev,
+                                      [activeRoadmap.repoName]: {
+                                        ...(prev[activeRoadmap.repoName] || {}),
+                                        [stage.title]: event.target.value,
+                                      },
+                                    }))
+                                  }
+                                  rows={3}
+                                  className="w-full rounded-[10px] border border-[#cfd6ff] bg-white px-3 py-2 text-[11px] text-[#3b3a70] shadow-sm outline-none"
+                                  placeholder="Paste one shareable proof URL"
+                                />
+                                <p className="text-[11px] text-[#667085]">
+                                  Add a note, a proof URL, or both. This update will be saved directly to the Progress Proof Archive.
+                                </p>
+                                <button
+                                  type="button"
+                                  disabled={isSavingStageUpdate}
+                                  onClick={() => void saveStageProgressUpdate(activeRoadmap.repoName, stage.title)}
+                                  className="rounded-full border border-[#d7dee8] bg-[#eef2ff] px-3 py-1.5 text-[11px] font-semibold text-[#2f3a8c] disabled:opacity-60"
+                                >
+                                  {isSavingStageUpdate ? "Posting..." : "Post Update"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </article>
                 )
