@@ -2,7 +2,9 @@
 
 .podium-page {
   position: relative;
+  max-width: 100%;
   min-height: 100%;
+  overflow-x: clip;
   color: #eeeeee;
   font-family: "Inter", sans-serif;
   box-sizing: border-box;
@@ -10,7 +12,8 @@
 }
 
 .leaderboard-carousel {
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .leaderboard-carousel__slide {
@@ -88,7 +91,8 @@
   place-items: center;
   margin-top: clamp(18rem, 20vw, 19rem);
   perspective: calc(var(--_podium-size) * 50);
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 @media only screen and (min-width: 600px) {
@@ -108,6 +112,7 @@
   grid-template-columns: repeat(3, 1fr);
   align-items: end;
   gap: 12px;
+  max-width: 100%;
   transform: rotateX(-40deg);
   transform-style: preserve-3d;
   text-align: center;

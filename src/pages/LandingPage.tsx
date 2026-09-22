@@ -32,6 +32,10 @@ export default function LandingPage() {
       setAuthError("")
       return
     }
+    if (errorCode === "github_authorization_cancelled") {
+      setAuthError("GitHub authorization was cancelled. Click GitHub Login again to continue.")
+      return
+    }
     if (errorCode === "github_oauth_failed") {
       setAuthError("GitHub login failed. Please click GitHub Login again.")
       return
