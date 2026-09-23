@@ -226,6 +226,7 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
   const [profileImage, setProfileImage] = useState("")
   const [educationHistory, setEducationHistory] = useState<EducationItem[]>([])
   const [jobExperience, setJobExperience] = useState<JobItem[]>([])
+  const [displayNameValue, setDisplayNameValue] = useState("")
   const [studentIdValue, setStudentIdValue] = useState("")
   const [programValue, setProgramValue] = useState("")
   const [yearLevelValue, setYearLevelValue] = useState("")
@@ -285,6 +286,7 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
     setProfileImage(typeof socialLinks.profile_image === "string" ? socialLinks.profile_image : "")
     setEducationHistory(toEducationArray(socialLinks.education_history))
     setJobExperience(toJobArray(socialLinks.job_experience))
+    setDisplayNameValue(data.profile.displayName || "")
     setStudentIdValue(typeof socialLinks.student_id === "string" ? socialLinks.student_id : data.profile.studentId || "")
     setProgramValue(typeof socialLinks.program === "string" ? socialLinks.program : data.profile.program || "")
     setYearLevelValue(typeof socialLinks.year_level === "string" ? socialLinks.year_level : data.profile.yearLevel || "")
@@ -388,6 +390,7 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
         theme_dark: themeDark,
         theme: themeLight,
         bio: aboutMeText.trim(),
+        display_name: displayNameValue.trim() || undefined,
         show_sections: {
           badges: showBadges,
           repos: showFeaturedRepos,
@@ -837,6 +840,20 @@ export default function PublicPortfolioPage({ mode = "public" }: PublicPortfolio
                   <p className="portfolio-editor-kicker">Profile details</p>
                   <h3 className="mt-2 text-[20px] font-semibold text-white">Student information</h3>
                   <div className="mt-4 grid gap-3">
+                    <div>
+                      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8fa6ff]">
+                        Display name
+                      </label>
+                      <input
+                        value={displayNameValue}
+                        onChange={(event) => setDisplayNameValue(event.target.value)}
+                        className={editorInputClass}
+                        placeholder="Your full name shown on the portfolio"
+                      />
+                      <p className="mt-1.5 text-[11px] text-[#95a3c7]">
+                        This name appears as the heading on your public portfolio page.
+                      </p>
+                    </div>
                     <input
                       value={studentIdValue}
                       onChange={(event) => setStudentIdValue(event.target.value)}

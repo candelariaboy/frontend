@@ -1269,6 +1269,7 @@ export async function updateSettings(
     bio?: string
     cover_image?: string
     is_public?: boolean
+    display_name?: string
   }
 ) {
   const data = await authFetch(`/api/user/settings`, token, {
