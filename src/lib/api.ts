@@ -369,7 +369,7 @@ export async function pingAuth(token: string) {
 }
 
 export async function logoutAuth(token: string) {
-  return authFetch(`/api/logout`, token, { method: "POST" })
+  return authFetch(`/api/logout`, token, { method: "POST", keepalive: true })
 }
 
 export async function registerUser(

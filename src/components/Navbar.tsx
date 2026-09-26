@@ -230,17 +230,18 @@ export default function Navbar({
     }
   }
 
-  async function handleLogout() {
-    try {
-      const stored = getStoredAuth()
-      if (stored && stored.token) {
-        await logoutAuth(stored.token)
-      }
-    } catch (e) {
-      // ignore logout errors
-    }
+  function handleLogout() {
+    const stored = getStoredAuth()
+
+    // Clear the local session immediately; backend activity logging must not block navigation.
     clearAllStoredAppData()
-    window.location.href = "/"
+    setShowLogoutConfirm(false)
+    if (stored.token) {
+      void logoutAuth(stored.token).catch(() => {
+        // Local logout is already complete; backend logging is best effort.
+      })
+    }
+    window.location.replace("/")
   }
 
   return (
@@ -362,7 +363,7 @@ export default function Navbar({
               </button>
               <button
                 type="button"
-                onClick={() => void handleLogout()}
+                onClick={handleLogout}
                 className="rounded-2xl border border-[#f3b4b4] bg-[#c62828] px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#b71c1c]"
               >
                 Yes
