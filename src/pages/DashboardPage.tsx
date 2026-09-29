@@ -5,6 +5,7 @@ import {
   claimBadges,
   fetchOwnerPortfolio,
   getStoredAuth,
+  recomputeInsights,
 } from "../lib/api"
 import { cinematicStagger, softFloat } from "../lib/motion"
 import type {
@@ -49,6 +50,7 @@ export default function DashboardPage() {
 
   const [data, setData] = useState<PortfolioResponse | null>(null)
   const [claimLoading, setClaimLoading] = useState(false)
+  const [recomputeLoading, setRecomputeLoading] = useState(false)
   const [toast, setToast] = useState("")
   const [levelUp, setLevelUp] = useState<{ level: number; xp: number } | null>(null)
 
@@ -255,6 +257,27 @@ export default function DashboardPage() {
               <p className="max-w-[240px] text-left text-[12px] text-[#5B5F7A] lg:text-right">
                 {nextStepHint}
               </p>
+              <button
+                type="button"
+                disabled={recomputeLoading}
+                className="rounded-full border border-[#cfd6ff] bg-white/90 px-4 py-2 text-[11px] font-semibold text-[#3b3a70] shadow-sm transition hover:bg-white disabled:cursor-wait disabled:opacity-60"
+                onClick={async () => {
+                  if (!auth.token || recomputeLoading) return
+                  setRecomputeLoading(true)
+                  setToast("")
+                  try {
+                    const updated = await recomputeInsights(auth.token)
+                    setData((prev) => ({ ...updated, settings: prev?.settings || {} }))
+                    setToast("AI recommendations updated from your latest GitHub data.")
+                  } catch (error) {
+                    setToast(error instanceof Error ? error.message : "Unable to update AI recommendations.")
+                  } finally {
+                    setRecomputeLoading(false)
+                  }
+                }}
+              >
+                {recomputeLoading ? "Updating recommendations..." : "Refresh AI recommendations"}
+              </button>
             </div>
           </div>
           <div className="mt-5">
@@ -293,7 +316,7 @@ export default function DashboardPage() {
           <h3 className="mt-2 text-[19px] font-medium text-[#1E1A3C]">Career Track Fit</h3>
           <p className="mt-1 text-[12px] text-[#6A6F88]">Signals from repositories translated into recommended career tracks.</p>
           <div className="mt-4 space-y-3">
-            {(data?.career_suggestions || []).slice(0, 4).map((item, index) => (
+            {(data?.career_suggestions || []).slice(0, 5).map((item, index) => (
               <div key={`${item.title}-${index}`} className="rounded-[14px] border border-[#e1e6fb] bg-[#f8f9ff] p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-[14px] font-medium text-[#2A2D4A]">{item.title}</p>
