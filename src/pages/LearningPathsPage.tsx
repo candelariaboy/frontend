@@ -3679,7 +3679,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                       ? "Completed repos now show the submitted stage proof bundle and direct GitHub link for review."
                       : canPrepareFinalEvidence
                         ? "Add supporting screenshots, videos, and docs here for this repository."
-                        : "Finish all skill stages first. Evidence Files will wait here until the repo is ready for final submission."}
+                        : "Add proof inside each stage card as you complete the checklist. This section opens later for the final evidence bundle."}
                 </p>
                 {activeRepoName ? (
                   <p className="mt-1 text-[11px] font-semibold text-[#2563eb]">Repo: {activeRepoName}</p>
@@ -4265,7 +4265,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                     <p className="mt-1 text-[13px] text-[#52667a]">
                       {activeRepoCompleted
                         ? `This learning path is complete${activeProjectPath?.repo_completed_at ? ` as of ${formatRealtimeStamp(activeProjectPath.repo_completed_at)}` : ""}.`
-                        : "Finish all skill stages, save the proof inside each stage archive, then claim the repo XP reward."}
+                        : "Complete each stage checklist and save its proof in the stage card. After all stages are ready, claim the repo XP reward."}
                     </p>
                     <p className="mt-2 text-[12px] font-semibold text-[#1d4ed8]">
                       {activeRepoCompleted
