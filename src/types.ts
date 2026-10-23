@@ -90,6 +90,8 @@ export type LearningPathStep = {
   title: string
   description?: string
   reason: string
+  task_requirement?: string
+  required_proof?: string[]
   type?: "Project" | "Skill" | "Certification" | "Course" | string
   tag?: string
   dimension_key?: string

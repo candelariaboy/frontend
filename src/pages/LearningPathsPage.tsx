@@ -49,6 +49,7 @@ type StageCard = {
   status: "done" | "in_progress" | "not_started" | "complete_stage"
   percent: number
   items: string[]
+  requiredProof?: string[]
   resources: Array<{ name: string; url: string }>
 }
 
@@ -592,6 +593,8 @@ function repoSpecificMilestones(repo: RepoSummary, index: number, generatedSteps
       title: generated.title || step.title,
       description: generated.description || generated.reason || step.description,
       reason: generated.reason || generated.description || step.reason,
+      task_requirement: generated.task_requirement || step.task_requirement || generated.description || step.description,
+      required_proof: generated.required_proof?.length ? generated.required_proof : step.required_proof,
       tags: unique([...(step.tags || []), ...(generated.tags || [])], 8),
       status: generated.status || step.status,
       reward_xp: generated.reward_xp || generated.estimated_xp || step.reward_xp,
@@ -631,10 +634,11 @@ function stagesFor(repo: RepoSummary | undefined, milestones: LearningPathStep[]
       const description = step.description || step.reason || `Complete the repository-specific goal: ${step.title}.`
       return {
         title: step.title,
-        summary: step.reason || description,
+        summary: step.task_requirement || step.reason || description,
         status: stageStatus,
         percent: stageStatus === "done" ? 100 : stageStatus === "in_progress" ? 40 : 0,
-        items: [description],
+        items: [step.task_requirement || description],
+        requiredProof: step.required_proof || [],
         resources: resolvedResources,
       }
     })
@@ -4466,7 +4470,9 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                 const showStageUpdate = adminView
                   ? showSavedProgressArchive || showAdminProgressPlaceholder
                   : stageStarted || showSavedProgressArchive
-                const proofRequirements = proofRequirementsForStage(stage, index)
+                const proofRequirements = stage.requiredProof?.length
+                  ? stage.requiredProof
+                  : proofRequirementsForStage(stage, index)
                 const achievementName = achievementForStage(stage, index)
                 return (
                   <article key={`${stage.title}-${index}`} className={`relative min-h-[190px] overflow-hidden rounded-[12px] border bg-white p-4 shadow-sm transition hover:-translate-y-[2px] ${styles.border} ${!adminView ? "md:min-h-0 md:p-0" : ""} ${isVisuallyLocked ? "opacity-60 stage-locked" : ""}`}>
