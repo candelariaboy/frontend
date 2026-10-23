@@ -2858,15 +2858,11 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       }
 
       void loadAdminView()
-      const intervalId = window.setInterval(() => {
-        void loadAdminView(false)
-      }, 2500)
       const handleFocus = () => void loadAdminView(false)
       window.addEventListener("focus", handleFocus)
       document.addEventListener("visibilitychange", handleFocus)
       return () => {
         cancelled = true
-        window.clearInterval(intervalId)
         window.removeEventListener("focus", handleFocus)
         document.removeEventListener("visibilitychange", handleFocus)
       }
@@ -2882,8 +2878,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     }
 
     let cancelled = false
-    let intervalId: number | undefined
-
     const refreshProjectPaths = async () => {
       const stored = getStoredAuth()
       const currentUsername = stored.username || auth.username
@@ -2935,14 +2929,10 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     }
 
     void load()
-    intervalId = window.setInterval(() => {
-      void refreshProjectPaths()
-    }, 4000)
     window.addEventListener("focus", handleFocus)
     document.addEventListener("visibilitychange", handleFocus)
     return () => {
       cancelled = true
-      if (intervalId) window.clearInterval(intervalId)
       window.removeEventListener("focus", handleFocus)
       document.removeEventListener("visibilitychange", handleFocus)
     }
