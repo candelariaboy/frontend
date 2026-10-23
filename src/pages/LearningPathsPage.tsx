@@ -625,6 +625,9 @@ function stagesFor(repo: RepoSummary | undefined, milestones: LearningPathStep[]
       ]
         .filter((resource) => resource?.name)
         .map((resource) => ({ name: String(resource.name), url: String(resource.url || "") }))
+      const resolvedResources = resources.length
+        ? resources
+        : combineResources(STAGE_RESOURCES.foundation, STAGE_RESOURCES.testing)
       const description = step.description || step.reason || `Complete the repository-specific goal: ${step.title}.`
       return {
         title: step.title,
@@ -632,7 +635,7 @@ function stagesFor(repo: RepoSummary | undefined, milestones: LearningPathStep[]
         status: stageStatus,
         percent: stageStatus === "done" ? 100 : stageStatus === "in_progress" ? 40 : 0,
         items: [description],
-        resources,
+        resources: resolvedResources,
       }
     })
   }
