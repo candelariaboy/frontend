@@ -583,7 +583,7 @@ function repoSpecificMilestones(repo: RepoSummary, index: number, generatedSteps
   const fallback = fallbackMilestones(repo, index)
   if (!generatedSteps?.length) return fallback
 
-  return generatedSteps.slice(0, 5).map((generated, stepIndex) => {
+  return generatedSteps.slice(0, 4).map((generated, stepIndex) => {
     const step = fallback[stepIndex] || fallback[fallback.length - 1]
     if (!step) return generated
     return {
@@ -623,18 +623,13 @@ function stagesFor(repo: RepoSummary | undefined, milestones: LearningPathStep[]
       ]
         .filter((resource) => resource?.name)
         .map((resource) => ({ name: String(resource.name), url: String(resource.url || "") }))
-      const evidenceText = (step.evidence || []).filter(Boolean).join(", ")
       const description = step.description || step.reason || `Complete the repository-specific goal: ${step.title}.`
       return {
         title: step.title,
         summary: step.reason || description,
         status: stageStatus,
         percent: stageStatus === "done" ? 100 : stageStatus === "in_progress" ? 40 : 0,
-        items: unique([
-          description,
-          step.progression_logic || `Explain the implementation decisions and expected result for ${step.title}.`,
-          `Submit proof for this step${evidenceText ? ` using: ${evidenceText}` : " with a screenshot, link, or document"}.`,
-        ], 3),
+        items: [description],
         resources,
       }
     })
@@ -2959,7 +2954,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     })
     return uniqueRepos.map((repo, index) => {
       const projectPath = projectPaths?.projects?.find((project) => project.repo_name === repo.name)
-      const milestones = repoSpecificMilestones(repo, index, projectPath?.steps).slice(0, 5)
+      const milestones = repoSpecificMilestones(repo, index, projectPath?.steps).slice(0, 4)
       const done = milestones.filter((step) => String(step.status || "").toLowerCase() === "done").length
       const progress = clamp(Number(projectPath?.progress_percent ?? (milestones.length ? (done / milestones.length) * 100 : 0)))
       return {
@@ -4398,7 +4393,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
             <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
               <div>
                 <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#3f4656]">Step-by-Step Learning Path</p>
-                <p className="mt-1 text-[12px] text-[#6A7288]">Each step has exactly three tasks, proof requirements, and an achievement tied to the selected GitHub repository.</p>
+                <p className="mt-1 text-[12px] text-[#6A7288]">Each step is one repository-specific task with its reason, expected result, resources, and proof requirement.</p>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold text-[#2f3a8c]">
@@ -4542,7 +4537,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
 
                         <div className="mt-3">
                           <div className="flex items-start justify-between gap-3">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">Three Required Tasks</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">Task Requirement</p>
                             {!adminView && stageHasProgressProof ? (
                               <p className="max-w-[220px] text-right text-[10px] font-semibold text-[#9a3412]">
                                 Checked outputs are locked while progress proof exists.
