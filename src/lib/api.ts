@@ -456,8 +456,13 @@ export async function fetchProjectLearningPaths(username: string, repoName?: str
   if (activeRequest) return activeRequest
 
   const request = (async () => {
-    const query = repoName?.trim() ? `?repo=${encodeURIComponent(repoName.trim())}` : ""
-    const response = await fetch(`${API_BASE}/api/learning-path/projects/${encodeURIComponent(username)}${query}`)
+    const params = new URLSearchParams()
+    if (repoName?.trim()) params.set("repo", repoName.trim())
+    params.set("t", String(Date.now()))
+    const response = await fetch(
+      `${API_BASE}/api/learning-path/projects/${encodeURIComponent(username)}?${params.toString()}`,
+      { cache: "no-store" },
+    )
     if (!response.ok) {
       throw new Error("Failed to fetch project learning paths")
     }
