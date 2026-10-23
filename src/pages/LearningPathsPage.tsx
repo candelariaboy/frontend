@@ -596,7 +596,9 @@ function repoSpecificMilestones(repo: RepoSummary, index: number, generatedSteps
       status: generated.status || step.status,
       reward_xp: generated.reward_xp || generated.estimated_xp || step.reward_xp,
       estimated_xp: generated.estimated_xp,
-      resources: generated.resources,
+      resources: generated.resources && Object.values(generated.resources).some((items) => Array.isArray(items) && items.length)
+        ? generated.resources
+        : step.resources,
       ai_explanation: generated.ai_explanation,
       progression_logic: generated.progression_logic,
       evidence: unique([...(step.evidence || []), ...(generated.evidence || [])], 8),
