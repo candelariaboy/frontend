@@ -3684,6 +3684,39 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                 {activeRepoName ? (
                   <p className="mt-1 text-[11px] font-semibold text-[#2563eb]">Repo: {activeRepoName}</p>
                 ) : null}
+                {!adminView && !canPrepareFinalEvidence && activeStages.length ? (
+                  <div className="mt-3 rounded-[14px] border border-[#dbe7ff] bg-[#f8fbff] p-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#31538f]">Stage evidence checklist</p>
+                    <p className="mt-1 text-[12px] text-[#52667a]">
+                      Save proof inside each stage below. Final Evidence Files will open after all stage proofs are ready.
+                    </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {activeStages.map((stage) => {
+                        const savedProofCount = countSavedStageProgressProofItems(
+                          getRecordValue(activeProjectPath?.stage_progress_updates, stage.title),
+                        )
+                        const proofCount = Math.max(
+                          stageProofStatusByRepo[activeRoadmap.repoName]?.[stage.title] || 0,
+                          savedProofCount,
+                        )
+                        const ready = isStageDoneLike(stage.status) && hasRequiredStageProgressProof(stage.items, proofCount)
+                        return (
+                          <button
+                            key={`stage-proof-${stage.title}`}
+                            type="button"
+                            onClick={() => scrollToSection("learning-path-stages")}
+                            className="flex items-center justify-between rounded-[10px] border border-[#dbe4f0] bg-white px-3 py-2 text-left hover:border-[#93c5fd]"
+                          >
+                            <span className="min-w-0 truncate text-[12px] font-semibold text-[#1f2937]">{stage.title}</span>
+                            <span className={`ml-2 shrink-0 text-[11px] font-semibold ${ready ? "text-[#15803d]" : "text-[#b45309]"}`}>
+                              {ready ? "Proof ready" : `${proofCount} proof`}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : null}
                 {!adminView && activeRepoGithubUrl && canPrepareFinalEvidence ? (
                   <a
                     href={activeRepoGithubUrl}
