@@ -450,13 +450,14 @@ export async function fetchLearningPath(username: string) {
   return response.json()
 }
 
-export async function fetchProjectLearningPaths(username: string) {
-  const key = username.trim().toLowerCase()
+export async function fetchProjectLearningPaths(username: string, repoName?: string) {
+  const key = `${username.trim().toLowerCase()}::${repoName?.trim().toLowerCase() || "all"}`
   const activeRequest = projectLearningPathRequests.get(key)
   if (activeRequest) return activeRequest
 
   const request = (async () => {
-    const response = await fetch(`${API_BASE}/api/learning-path/projects/${encodeURIComponent(username)}`)
+    const query = repoName?.trim() ? `?repo=${encodeURIComponent(repoName.trim())}` : ""
+    const response = await fetch(`${API_BASE}/api/learning-path/projects/${encodeURIComponent(username)}${query}`)
     if (!response.ok) {
       throw new Error("Failed to fetch project learning paths")
     }

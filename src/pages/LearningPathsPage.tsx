@@ -1449,6 +1449,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   const [loadError, setLoadError] = useState("")
   const [projectPathError, setProjectPathError] = useState("")
   const [recomputing, setRecomputing] = useState(false)
+  const [generatingRepoPath, setGeneratingRepoPath] = useState("")
   const [evidenceByRepo, setEvidenceByRepo] = useState<Record<string, EvidenceItem[]>>({})
   const [evidenceNameDraftByRepo, setEvidenceNameDraftByRepo] = useState<Record<string, string>>({})
   const [evidenceLinkDraftByRepo, setEvidenceLinkDraftByRepo] = useState<Record<string, string>>({})
@@ -3481,6 +3482,30 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     }
   }
 
+  async function handleGenerateRepoPath(repoName: string) {
+    if (adminView || !targetUsername || !repoName || generatingRepoPath) return
+    setGeneratingRepoPath(repoName)
+    setProjectPathError("")
+    try {
+      const selectedPath = await fetchProjectLearningPaths(targetUsername, repoName)
+      const selectedProject = selectedPath?.projects?.find(
+        (project: ProjectLearningPathResponse["projects"][number]) => normalizeStorageKey(project.repo_name) === normalizeStorageKey(repoName)
+      )
+      if (!selectedProject) throw new Error("No repository-specific learning path was returned.")
+      const existingProjects = (projectPaths?.projects || []).filter(
+        (project: ProjectLearningPathResponse["projects"][number]) => normalizeStorageKey(project.repo_name) !== normalizeStorageKey(repoName)
+      )
+      applyProjectPaths({
+        ...selectedPath,
+        projects: [...existingProjects, selectedProject],
+      })
+    } catch (err) {
+      setProjectPathError(err instanceof Error ? err.message : "This repository path could not be generated right now.")
+    } finally {
+      setGeneratingRepoPath("")
+    }
+  }
+
   if (!targetUsername) {
     const missingUser = (
       <div className="mx-auto max-w-[1240px] px-4 py-6 sm:px-6 lg:px-8">
@@ -4346,9 +4371,21 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                 <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#3f4656]">Step-by-Step Learning Path</p>
                 <p className="mt-1 text-[12px] text-[#6A7288]">Each step has exactly three tasks, proof requirements, and an achievement tied to the selected GitHub repository.</p>
               </div>
-              <span className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold text-[#2f3a8c]">
-                {completeStages} complete, {doneStages} missing proof, {activeRoadmap.stages.length} total stages
-              </span>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <span className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold text-[#2f3a8c]">
+                  {completeStages} complete, {doneStages} missing proof, {activeRoadmap.stages.length} total stages
+                </span>
+                {!adminView ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleGenerateRepoPath(activeRoadmap.repoName)}
+                    disabled={generatingRepoPath === activeRoadmap.repoName}
+                    className="rounded-full border border-[#93c5fd] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#1d4ed8] shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {generatingRepoPath === activeRoadmap.repoName ? "Generating..." : "Generate repo-specific next steps"}
+                  </button>
+                ) : null}
+              </div>
             </div>
             <div className={`grid gap-3 ${adminView ? "md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"}`}>
               {activeStages.map((stage, index) => {
