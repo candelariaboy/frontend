@@ -583,11 +583,16 @@ function repoSpecificMilestones(repo: RepoSummary, index: number, generatedSteps
   const fallback = fallbackMilestones(repo, index)
   if (!generatedSteps?.length) return fallback
 
-  return fallback.map((step, stepIndex) => {
-    const generated = generatedSteps[stepIndex]
-    if (!generated) return step
+  return generatedSteps.slice(0, 5).map((generated, stepIndex) => {
+    const step = fallback[stepIndex] || fallback[fallback.length - 1]
+    if (!step) return generated
     return {
       ...step,
+      ...generated,
+      title: generated.title || step.title,
+      description: generated.description || generated.reason || step.description,
+      reason: generated.reason || generated.description || step.reason,
+      tags: unique([...(step.tags || []), ...(generated.tags || [])], 8),
       status: generated.status || step.status,
       reward_xp: generated.reward_xp || generated.estimated_xp || step.reward_xp,
       estimated_xp: generated.estimated_xp,
@@ -600,6 +605,40 @@ function repoSpecificMilestones(repo: RepoSummary, index: number, generatedSteps
 }
 
 function stagesFor(repo: RepoSummary | undefined, milestones: LearningPathStep[]): StageCard[] {
+  const generatedMilestones = milestones.filter((step) => Boolean(step.ai_explanation || step.progression_logic))
+  if (generatedMilestones.length) {
+    return generatedMilestones.map((step, index) => {
+      const status = String(step.status || "todo").toLowerCase()
+      const stageStatus: StageCard["status"] = status === "done"
+        ? "done"
+        : status === "in_progress"
+          ? "in_progress"
+          : index === 0
+            ? "in_progress"
+            : "not_started"
+      const resources = [
+        ...(step.resources?.courses || []),
+        ...(step.resources?.tools || []),
+        ...(step.resources?.documentation || []),
+      ]
+        .filter((resource) => resource?.name)
+        .map((resource) => ({ name: String(resource.name), url: String(resource.url || "") }))
+      const evidenceText = (step.evidence || []).filter(Boolean).join(", ")
+      const description = step.description || step.reason || `Complete the repository-specific goal: ${step.title}.`
+      return {
+        title: step.title,
+        summary: step.reason || description,
+        status: stageStatus,
+        percent: stageStatus === "done" ? 100 : stageStatus === "in_progress" ? 40 : 0,
+        items: unique([
+          description,
+          step.progression_logic || `Explain the implementation decisions and expected result for ${step.title}.`,
+          `Submit proof for this step${evidenceText ? ` using: ${evidenceText}` : " with a screenshot, link, or document"}.`,
+        ], 3),
+        resources,
+      }
+    })
+  }
   const repoText = repoSignalText(repo)
   const milestoneText = milestones
     .flatMap((step) => [step.title, step.description, step.reason, step.type, ...(step.tags || []), ...(step.evidence || [])])
