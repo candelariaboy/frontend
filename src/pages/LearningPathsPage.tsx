@@ -36,6 +36,7 @@ import type { LearningPathStep, PortfolioResponse, ProjectLearningPathResponse, 
 
 type RepoRoadmap = {
   repoName: string
+  isGenerating: boolean
   progress: number
   summary: string
   evidence: string[]
@@ -2968,6 +2969,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       const progress = clamp(Number(projectPath?.progress_percent ?? (milestones.length ? (done / milestones.length) * 100 : 0)))
       return {
         repoName: repo.name,
+        isGenerating: Boolean(loading && !projectPath),
         progress,
         summary: inferRepoSummary(repo),
         evidence: unique([...repoEvidenceTags(repo), ...(milestones.flatMap((step) => step.evidence || []))], 10),
@@ -2975,7 +2977,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         milestones,
       }
     })
-  }, [portfolio?.repos, projectPaths?.projects])
+  }, [loading, portfolio?.repos, projectPaths?.projects])
 
   useEffect(() => {
     if (!selectedRepo && roadmaps[0]?.repoName) {
@@ -3701,6 +3703,11 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                   <p className="max-w-[170px] truncate text-[13px] font-semibold">{roadmap.repoName}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <p className="text-[11px] font-semibold text-[#6A6F88]">{inferRepoTrack(repo)}</p>
+                      {roadmap.isGenerating ? (
+                        <span className="animate-pulse rounded-full border border-[#c7d2fe] bg-[#eef2ff] px-2 py-0.5 text-[10px] font-semibold text-[#4338ca]">
+                          Generating path...
+                        </span>
+                      ) : null}
                     {adminView ? (
                       <span className="rounded-full border border-current/20 px-2 py-0.5 text-[10px] font-semibold">
                         {repoStatusLabel}
@@ -4420,6 +4427,14 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                 ) : null}
               </div>
             </div>
+            {activeRoadmap.isGenerating ? (
+              <div className="mb-3 rounded-[14px] border border-[#c7d2fe] bg-[linear-gradient(135deg,#eef2ff,#f8fbff)] px-4 py-3 text-[12px] text-[#4338ca] shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#a5b4fc] border-t-[#4338ca]" />
+                  <span>Generating the correct learning path for <strong>{activeRoadmap.repoName}</strong> from its repository signals...</span>
+                </div>
+              </div>
+            ) : null}
             <div className={`grid gap-3 ${adminView ? "md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"}`}>
               {activeStages.map((stage, index) => {
                 const styles = stageStyles(stage.status)
@@ -4571,68 +4586,46 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                               const showWarningShake = Boolean(warningStageItems[itemIndex])
                               return (
                               <li key={`${stage.title}-${itemIndex}-${item}`}>
-                                <button
-                                  type="button"
-                                  disabled={adminView || stageBusy}
-                                  onClick={(event) => {
-                                    event.preventDefault()
-                                    event.stopPropagation()
-                                    if (stageLocked) {
-                                      triggerStageItemWarning(activeRoadmap.repoName, stage.title, itemIndex)
-                                      setProjectPathError("Finish the earlier stage first before working on this locked output.")
-                                      return
-                                    }
-                                    if (outputLockedByProof) {
-                                      triggerStageItemWarning(activeRoadmap.repoName, stage.title, itemIndex)
-                                      setProjectPathError(
-                                        "Finish this stage first and save a progress proof before unlocking the last output."
-                                      )
-                                      return
-                                    }
-                                    void toggleStageItem(
-                                      activeRoadmap.repoName,
-                                      stage.title,
-                                      stage.items,
-                                      itemIndex,
-                                      stageLocked,
-                                      !adminView && stageHasProgressProof && stageChecks[itemIndex]
-                                    )
-                                  }}
+                                <label
                                   className={`flex w-full items-start gap-2 rounded-[8px] px-2 py-1 text-left text-[13px] leading-5 transition ${
                                     adminView || stageLocked || stageBusy || outputLockedByProof
                                       ? "cursor-default"
-                                      : "hover:bg-[#f8fafc]"
+                                      : "cursor-pointer hover:bg-[#f8fafc]"
                                   } ${stageChecks[itemIndex] ? "text-[#166534]" : "text-[#374151]"} ${showWarningShake ? "stage-output-warning-shake" : ""}`}
                                 >
-                                  <span>
-                                    {stageLocked ? (
-                                      <svg
-                                        aria-hidden="true"
-                                        viewBox="0 0 24 24"
-                                        className="mt-[1px] h-4 w-4 text-[#73776f]"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      >
-                                        <rect x="5" y="11" width="14" height="10" rx="2" />
-                                        <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-                                      </svg>
-                                    ) : stageChecks[itemIndex] || isStageDoneLike(stage.status) ? (
-                                      <span className="mt-[2px] grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border border-[#16a34a] bg-[#16a34a] text-white shadow-sm">
-                                        <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                      </span>
-                                    ) : (
-                                      <span className="mt-[2px] h-4 w-4 shrink-0 rounded-[4px] border-2 border-[#94a3b8] bg-white transition hover:border-[#64748b]" />
-                                    )}
-                                  </span>
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(stageChecks[itemIndex] || isStageDoneLike(stage.status))}
+                                    disabled={adminView || stageLocked || stageBusy || outputLockedByProof}
+                                    onChange={() => {
+                                      if (stageLocked) {
+                                        triggerStageItemWarning(activeRoadmap.repoName, stage.title, itemIndex)
+                                        setProjectPathError("Finish the earlier stage first before working on this locked output.")
+                                        return
+                                      }
+                                      if (outputLockedByProof) {
+                                        triggerStageItemWarning(activeRoadmap.repoName, stage.title, itemIndex)
+                                        setProjectPathError(
+                                          "Finish this stage first and save a progress proof before unlocking the last output."
+                                        )
+                                        return
+                                      }
+                                      void toggleStageItem(
+                                        activeRoadmap.repoName,
+                                        stage.title,
+                                        stage.items,
+                                        itemIndex,
+                                        stageLocked,
+                                        !adminView && stageHasProgressProof && stageChecks[itemIndex]
+                                      )
+                                    }}
+                                    className="mt-[2px] h-4 w-4 shrink-0 accent-[#16a34a]"
+                                    aria-label={`${stage.title}: ${item}`}
+                                  />
                                   <span className={`font-medium ${stageChecks[itemIndex] || isStageDoneLike(stage.status) ? "line-through decoration-[#86efac]" : ""}`}>
                                     {item}
                                   </span>
-                                </button>
+                                </label>
                                 {outputLockedByProof ? (
                                   <p className="pl-8 pr-2 text-[10px] font-medium text-[#b45309]">
                                     Save a progress proof first.

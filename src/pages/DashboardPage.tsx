@@ -316,7 +316,7 @@ export default function DashboardPage() {
           <h3 className="mt-2 text-[19px] font-medium text-[#1E1A3C]">Career Track Fit</h3>
           <p className="mt-1 text-[12px] text-[#6A6F88]">Signals from repositories translated into recommended career tracks.</p>
           <div className="mt-4 space-y-3">
-            {(data?.career_suggestions || []).slice(0, 5).map((item, index) => (
+            {(data?.career_suggestions || []).map((item, index) => (
               <div key={`${item.title}-${index}`} className="rounded-[14px] border border-[#e1e6fb] bg-[#f8f9ff] p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-[14px] font-medium text-[#2A2D4A]">{item.title}</p>
