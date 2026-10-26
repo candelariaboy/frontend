@@ -1487,7 +1487,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
   const [evidenceNameDraftByRepo, setEvidenceNameDraftByRepo] = useState<Record<string, string>>({})
   const [evidenceLinkDraftByRepo, setEvidenceLinkDraftByRepo] = useState<Record<string, string>>({})
   const [stageUpdateCommentByRepo, setStageUpdateCommentByRepo] = useState<Record<string, Record<string, string>>>({})
-  const [stageUpdateLinkNameDraftByRepo, setStageUpdateLinkNameDraftByRepo] = useState<Record<string, Record<string, string>>>({})
   const [stageUpdateLinkDraftByRepo, setStageUpdateLinkDraftByRepo] = useState<Record<string, Record<string, string>>>({})
   const [savingStageUpdateKey, setSavingStageUpdateKey] = useState("")
   const [savingAdminFeedbackKey, setSavingAdminFeedbackKey] = useState("")
@@ -2180,7 +2179,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     const updateKey = `${repoName}::${stageTitle}`
     const comment = String(stageUpdateCommentByRepo[repoName]?.[stageTitle] || "").trim()
     const draftProof = buildProofLinkItem(
-      stageUpdateLinkNameDraftByRepo[repoName]?.[stageTitle] || "",
+      "",
       stageUpdateLinkDraftByRepo[repoName]?.[stageTitle] || "",
       `${stageTitle} proof`
     )
@@ -2236,13 +2235,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         syncStageTrackingFromProjectPaths(merged)
       }
       setStageUpdateLinkDraftByRepo((prev) => ({
-        ...prev,
-        [repoName]: {
-          ...(prev[repoName] || {}),
-          [stageTitle]: "",
-        },
-      }))
-      setStageUpdateLinkNameDraftByRepo((prev) => ({
         ...prev,
         [repoName]: {
           ...(prev[repoName] || {}),
@@ -4417,7 +4409,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                 const rawProgressProofItems = latestProgressArchiveEntry?.proof_items || savedStageUpdate?.proof_items || []
                 const progressProofItems = rawProgressProofItems
                 const stageBusy = Boolean(busyStageKeys[stageStateKey(activeRoadmap.repoName, stage.title)])
-                const draftStageLinkName = stageUpdateLinkNameDraftByRepo[activeRoadmap.repoName]?.[stage.title] || ""
                 const draftStageLinks = stageUpdateLinkDraftByRepo[activeRoadmap.repoName]?.[stage.title] || ""
                 const draftStageComment = stageUpdateCommentByRepo[activeRoadmap.repoName]?.[stage.title] || ""
                 const isSavingStageUpdate = savingStageUpdateKey === `${activeRoadmap.repoName}::${stage.title}`
@@ -4752,7 +4743,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                           <div className="mt-3 rounded-[12px] border border-dashed border-[#cfd6e6] bg-white p-3 shadow-sm">
                             <div className="grid gap-3">
                               <div className="min-w-0">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">What are you working on now?</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">Add progress proof</p>
                                 <textarea
                                   value={draftStageComment}
                                   onChange={(event) =>
@@ -4764,26 +4755,13 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                                       },
                                     }))
                                   }
-                                  className="mt-2 h-20 w-full rounded-[8px] border border-[#d6dcef] bg-white px-3 py-2 text-[12px] text-[#111827] outline-none"
-                                  placeholder="Example: I finished the login flow, added screenshots, and I am now testing the validation behavior."
+                                  rows={2}
+                                  className="mt-2 w-full rounded-[8px] border border-[#d6dcef] bg-white px-3 py-2 text-[12px] text-[#111827] outline-none"
+                                  placeholder="Optional note: What did you complete?"
                                 />
                               </div>
                               <div className="flex flex-col items-start gap-2">
                                 <input
-                                  value={draftStageLinkName}
-                                  onChange={(event) =>
-                                    setStageUpdateLinkNameDraftByRepo((prev) => ({
-                                      ...prev,
-                                      [activeRoadmap.repoName]: {
-                                        ...(prev[activeRoadmap.repoName] || {}),
-                                        [stage.title]: event.target.value,
-                                      },
-                                    }))
-                                  }
-                                  className="w-full rounded-[10px] border border-[#cfd6ff] bg-white px-3 py-2 text-[11px] text-[#3b3a70] shadow-sm outline-none"
-                                  placeholder="Proof name (e.g. Login Screenshot)"
-                                />
-                                <textarea
                                   value={draftStageLinks}
                                   onChange={(event) =>
                                     setStageUpdateLinkDraftByRepo((prev) => ({
@@ -4794,12 +4772,12 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                                       },
                                     }))
                                   }
-                                  rows={3}
+                                  type="url"
                                   className="w-full rounded-[10px] border border-[#cfd6ff] bg-white px-3 py-2 text-[11px] text-[#3b3a70] shadow-sm outline-none"
-                                  placeholder="Paste one shareable proof URL"
+                                  placeholder="Paste Google Drive, GitHub, demo, or any shareable link"
                                 />
                                 <p className="text-[11px] text-[#667085]">
-                                  Add a note, a proof URL, or both. This update will be saved directly to the Progress Proof Archive.
+                                  Add a note, a link, or both. The link appears as an Open link button in View Proof.
                                 </p>
                                 <button
                                   type="button"
