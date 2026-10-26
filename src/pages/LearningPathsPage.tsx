@@ -2575,6 +2575,10 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       const currentEntries = normalizeStageProgressEntries(currentUpdate)
       const optimisticEntries = currentEntries.filter((entry) => entry.entry_id !== entryId)
       const optimisticLatestEntry = optimisticEntries[optimisticEntries.length - 1] || null
+      const resetStage = optimisticEntries.length === 0
+      const resetChecks = resetStage
+        ? (currentUpdate?.stage_checks as boolean[] | undefined) || []
+        : undefined
       const optimisticUpdate = {
         ...(currentUpdate || {}),
         comment: optimisticLatestEntry?.comment || null,
@@ -2587,6 +2591,22 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         ...current,
         ...optimisticUpdate,
       }))
+      if (resetStage) {
+        protectStageChecks(repoName, stageTitle, resetChecks || [])
+        setStageStatusByRepo((prev) => ({
+          ...prev,
+          [repoName]: { ...(prev[repoName] || {}), [stageTitle]: "not_started" },
+        }))
+        setStageChecksByRepo((prev) => ({
+          ...prev,
+          [repoName]: { ...(prev[repoName] || {}), [stageTitle]: [] },
+        }))
+        setStageProofStatusByRepo((prev) => ({
+          ...prev,
+          [repoName]: { ...(prev[repoName] || {}), [stageTitle]: 0 },
+        }))
+        patchProjectPathStageState(repoName, stageTitle, "not_started", { checks: [], proofCount: 0 })
+      }
       setProofViewer((prev) =>
         prev && prev.repoName === repoName && prev.stageTitle === stageTitle
           ? optimisticLatestEntry
