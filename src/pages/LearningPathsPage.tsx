@@ -344,6 +344,14 @@ function countSavedStageProgressProofItems(update?: Record<string, unknown> | nu
   }, 0)
 }
 
+function effectiveStageProgressProofCount(update: Record<string, unknown> | null | undefined, storedCount: unknown) {
+  const savedCount = countSavedStageProgressProofItems(update)
+  const hasExplicitProgressData = Boolean(
+    update && (Object.prototype.hasOwnProperty.call(update, "progress_entries") || Object.prototype.hasOwnProperty.call(update, "proof_items"))
+  )
+  return hasExplicitProgressData ? savedCount : Math.max(Number(storedCount || 0), savedCount)
+}
+
 function requiredStageProofCount(_items: string[]) {
   return 1
 }
@@ -1669,7 +1677,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       (item) => normalizeStorageKey(item.repo_name) === normalizeStorageKey(repoName)
     )
     const backendChecks = getRecordValue(project?.stage_checks, stageTitle)
-    return normalizeStageChecks(items, localChecks || backendChecks)
+    return normalizeStageChecks(items, backendChecks || localChecks)
   }
 
   function markCurrentStageNotificationsSeen(repoName: string, stageTitle: string) {
@@ -1805,8 +1813,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       ;(projectPath.projects || []).forEach((project) => {
         const counts: Record<string, number> = { ...(project.stage_proof_counts || {}) }
         Object.entries(project.stage_progress_updates || {}).forEach(([stageTitle, update]) => {
-          const progressProofCount = countSavedStageProgressProofItems(update as Record<string, unknown>)
-          counts[stageTitle] = Math.max(Number(counts[stageTitle] || 0), progressProofCount)
+          counts[stageTitle] = effectiveStageProgressProofCount(update as Record<string, unknown>, counts[stageTitle])
         })
         next[project.repo_name] = counts
       })
@@ -2135,11 +2142,9 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       (entry) => normalizeStorageKey(entry.repo_name) === normalizeStorageKey(repoName)
     )
     const stageUpdate = getRecordValue(project?.stage_progress_updates, stageTitle)
-    const savedProofCount = countSavedStageProgressProofItems(stageUpdate)
-    const proofCount = Math.max(
-      stageProofStatusByRepo[repoName]?.[stageTitle] || 0,
-      getRecordValue(project?.stage_proof_counts, stageTitle) || 0,
-      savedProofCount
+    const proofCount = effectiveStageProgressProofCount(
+      stageUpdate,
+      Math.max(stageProofStatusByRepo[repoName]?.[stageTitle] || 0, getRecordValue(project?.stage_proof_counts, stageTitle) || 0),
     )
     setBusyStageKeys((prev) => ({ ...prev, [stageKey]: true }))
     try {
@@ -2893,19 +2898,17 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
           const backendStatus = normalizeStageStatusValue(
             String(getRecordValue(project?.stage_status_overrides, stage.title) || "not_started")
           )
-          const proofCount = Math.max(
-            stageProofStatusByRepo[roadmap.repoName]?.[stage.title] || 0,
-            getRecordValue(project?.stage_proof_counts, stage.title) || 0,
-            countSavedStageProgressProofItems(stageUpdate)
+          const proofCount = effectiveStageProgressProofCount(
+            stageUpdate,
+            Math.max(stageProofStatusByRepo[roadmap.repoName]?.[stage.title] || 0, getRecordValue(project?.stage_proof_counts, stage.title) || 0),
           )
           const previousLocked = stages
             .slice(0, index)
             .some((earlierStage) => {
               const earlierStageUpdate = getRecordValue(project?.stage_progress_updates, earlierStage.title)
-              const earlierProofCount = Math.max(
-                stageProofStatusByRepo[roadmap.repoName]?.[earlierStage.title] || 0,
-                getRecordValue(project?.stage_proof_counts, earlierStage.title) || 0,
-                countSavedStageProgressProofItems(earlierStageUpdate)
+              const earlierProofCount = effectiveStageProgressProofCount(
+                earlierStageUpdate,
+                Math.max(stageProofStatusByRepo[roadmap.repoName]?.[earlierStage.title] || 0, getRecordValue(project?.stage_proof_counts, earlierStage.title) || 0),
               )
               const earlierStatus = normalizeStageStatusValue(
                 String(getRecordValue(project?.stage_status_overrides, earlierStage.title) || repoStatuses[earlierStage.title] || "not_started")
@@ -2982,19 +2985,17 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
           const backendStatus = normalizeStageStatusValue(
             String(getRecordValue(project?.stage_status_overrides, stage.title) || "not_started")
           )
-          const proofCount = Math.max(
-            stageProofStatusByRepo[roadmap.repoName]?.[stage.title] || 0,
-            getRecordValue(project?.stage_proof_counts, stage.title) || 0,
-            countSavedStageProgressProofItems(stageUpdate)
+          const proofCount = effectiveStageProgressProofCount(
+            stageUpdate,
+            Math.max(stageProofStatusByRepo[roadmap.repoName]?.[stage.title] || 0, getRecordValue(project?.stage_proof_counts, stage.title) || 0),
           )
           const previousLocked = stages
             .slice(0, index)
             .some((earlierStage) => {
               const earlierStageUpdate = getRecordValue(project?.stage_progress_updates, earlierStage.title)
-              const earlierProofCount = Math.max(
-                stageProofStatusByRepo[roadmap.repoName]?.[earlierStage.title] || 0,
-                getRecordValue(project?.stage_proof_counts, earlierStage.title) || 0,
-                countSavedStageProgressProofItems(earlierStageUpdate)
+              const earlierProofCount = effectiveStageProgressProofCount(
+                earlierStageUpdate,
+                Math.max(stageProofStatusByRepo[roadmap.repoName]?.[earlierStage.title] || 0, getRecordValue(project?.stage_proof_counts, earlierStage.title) || 0),
               )
               const earlierStatus = normalizeStageStatusValue(
                 String(getRecordValue(project?.stage_status_overrides, earlierStage.title) || "not_started")
@@ -3074,21 +3075,19 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         const backendStatus = getRecordValue(activeProjectPath?.stage_status_overrides, stage.title)
         const normalizedBackendStatus = normalizeStageStatusValue(String(backendStatus || "not_started"))
         const stageUpdate = getRecordValue(activeProjectPath?.stage_progress_updates, stage.title)
-        const savedProgressProofCount = countSavedStageProgressProofItems(stageUpdate)
-        const proofCount = Math.max(
-          stageProofStatusByRepo[repoName]?.[stage.title] || 0,
-          getRecordValue(activeProjectPath?.stage_proof_counts, stage.title) || 0,
-          savedProgressProofCount
+        const proofCount = effectiveStageProgressProofCount(
+          stageUpdate,
+          Math.max(stageProofStatusByRepo[repoName]?.[stage.title] || 0, getRecordValue(activeProjectPath?.stage_proof_counts, stage.title) || 0),
         )
         const hasRequiredProof = hasRequiredStageProgressProof(stage.items, proofCount)
-        const storedStatus = normalizeStageStatusValue(String(adminView
-          ? backendStatus || stageStatusByRepo[repoName]?.[stage.title] || "not_started"
-          : stageStatusByRepo[repoName]?.[stage.title] || backendStatus || "not_started"))
+        const storedStatus = normalizeStageStatusValue(String(
+          backendStatus || stageStatusByRepo[repoName]?.[stage.title] || "not_started"
+        ))
         let checks = normalizeStageChecks(
           stage.items,
           adminView
             ? backendChecks || localChecks
-            : optimisticChecks || localChecks || backendChecks
+            : optimisticChecks || backendChecks || localChecks
         )
         if ((storedStatus === "complete_stage" || (storedStatus === "done" && hasRequiredProof)) && stage.items.length > 0) {
           checks = stage.items.map(() => true)
@@ -3111,11 +3110,9 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
               ? getRecordValue(activeProjectPath?.stage_status_overrides, earlierStage.title) || stageStatusByRepo[repoName]?.[earlierStage.title] || "not_started"
               : stageStatusByRepo[repoName]?.[earlierStage.title] || getRecordValue(activeProjectPath?.stage_status_overrides, earlierStage.title) || "not_started"))
             const earlierStageUpdate = getRecordValue(activeProjectPath?.stage_progress_updates, earlierStage.title)
-            const earlierSavedProgressProofCount = countSavedStageProgressProofItems(earlierStageUpdate)
-            const earlierProofCount = Math.max(
-              stageProofStatusByRepo[repoName]?.[earlierStage.title] || 0,
-              getRecordValue(activeProjectPath?.stage_proof_counts, earlierStage.title) || 0,
-              earlierSavedProgressProofCount
+            const earlierProofCount = effectiveStageProgressProofCount(
+              earlierStageUpdate,
+              Math.max(stageProofStatusByRepo[repoName]?.[earlierStage.title] || 0, getRecordValue(activeProjectPath?.stage_proof_counts, earlierStage.title) || 0),
             )
             const earlierChecks = normalizeStageChecks(
               earlierStage.items,
@@ -3275,9 +3272,12 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     ? currentMilestoneChecks.findIndex((checked) => !checked)
     : -1
   const activeStageProofReadyCount = activeStages.filter((stage) => {
-    const proofCount = Math.max(
-      stageProofStatusByRepo[activeRoadmap?.repoName || ""]?.[stage.title] || 0,
-      getRecordValue(activeProjectPath?.stage_proof_counts, stage.title) || 0
+    const proofCount = effectiveStageProgressProofCount(
+      getRecordValue(activeProjectPath?.stage_progress_updates, stage.title),
+      Math.max(
+        stageProofStatusByRepo[activeRoadmap?.repoName || ""]?.[stage.title] || 0,
+        getRecordValue(activeProjectPath?.stage_proof_counts, stage.title) || 0,
+      ),
     )
     return stage.status === "complete_stage" || (stage.status === "done" && hasRequiredStageProgressProof(stage.items, proofCount))
   }).length
@@ -3652,9 +3652,9 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                         const savedProofCount = countSavedStageProgressProofItems(
                           getRecordValue(activeProjectPath?.stage_progress_updates, stage.title),
                         )
-                        const proofCount = Math.max(
-                          stageProofStatusByRepo[activeRoadmap.repoName]?.[stage.title] || 0,
-                          savedProofCount,
+                        const proofCount = effectiveStageProgressProofCount(
+                          getRecordValue(activeProjectPath?.stage_progress_updates, stage.title),
+                          stageProofStatusByRepo[activeRoadmap.repoName]?.[stage.title] || savedProofCount,
                         )
                         const ready = isStageDoneLike(stage.status) && hasRequiredStageProgressProof(stage.items, proofCount)
                         return (
