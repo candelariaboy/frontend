@@ -5296,9 +5296,8 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                             </span>
                           ) : null}
                         </div>
-                        <h4 className="mt-1 text-[16px] font-semibold text-[#111827]">{activeTitle}</h4>
                         <p className="mt-1 text-[11px] text-[#667085]">
-                          {activeTimestamp ? formatRealtimeStamp(activeTimestamp) : "No timestamp"} {activeProofItems.length ? `- ${activeProofItems.length} attached` : ""}
+                          {activeProofItems.length ? `${activeProofItems.length} attached` : "No links attached"}
                         </p>
                       </div>
                       {!adminView && selectedEntry ? (
