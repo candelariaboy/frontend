@@ -337,12 +337,6 @@ function normalizeStageProgressEntries(update?: Record<string, unknown> | null):
   ]
 }
 
-function hasSavedStageProgressProof(update?: Record<string, unknown> | null) {
-  return normalizeStageProgressEntries(update).some((entry) =>
-    Array.isArray(entry.proof_items) && entry.proof_items.some((item) => String(item.url || "").trim())
-  )
-}
-
 function countSavedStageProgressProofItems(update?: Record<string, unknown> | null) {
   return normalizeStageProgressEntries(update).reduce((total, entry) => {
     const proofItems = Array.isArray(entry.proof_items) ? entry.proof_items : []
@@ -356,11 +350,6 @@ function requiredStageProofCount(_items: string[]) {
 
 function hasRequiredStageProgressProof(items: string[], proofCount: number) {
   return proofCount >= requiredStageProofCount(items)
-}
-
-function canUnlockLastStageOutput(items: string[], proofCount: number) {
-  if (items.length <= 0) return false
-  return proofCount >= 1
 }
 
 function stageHasAllOutputsChecked(stage: StageCard & { checks?: boolean[] }) {
@@ -2123,8 +2112,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     stageTitle: string,
     items: string[],
     itemIndex: number,
-    locked: boolean,
-    progressProofLocked: boolean
+    locked: boolean
   ) {
     const stageKey = stageStateKey(repoName, stageTitle)
     if (adminView || locked) return
@@ -2144,10 +2132,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
         return
       }
     }
-    if (progressProofLocked && currentChecks[itemIndex]) {
-      setProjectPathError("Delete the saved progress proof for this stage before unchecking its completed outputs.")
-      return
-    }
     const project = projectPaths?.projects?.find(
       (entry) => normalizeStorageKey(entry.repo_name) === normalizeStorageKey(repoName)
     )
@@ -2158,17 +2142,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
       getRecordValue(project?.stage_proof_counts, stageTitle) || 0,
       savedProofCount
     )
-    const checkingLastOutput =
-      !isUnchecking &&
-      itemIndex === items.length - 1 &&
-      currentChecks.slice(0, Math.max(items.length - 1, 0)).every(Boolean)
-    if (checkingLastOutput && !canUnlockLastStageOutput(items, proofCount)) {
-      const neededBeforeFinal = items.length <= 1 ? 1 : items.length - 1
-      setProjectPathError(
-        `Post at least ${neededBeforeFinal} saved progress proof ${neededBeforeFinal === 1 ? "item" : "items"} before checking the last output in this stage.`
-      )
-      return
-    }
     setBusyStageKeys((prev) => ({ ...prev, [stageKey]: true }))
     try {
       const nextChecks = currentChecks.map((checked, index) => (index === itemIndex ? !checked : checked))
@@ -4450,14 +4423,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                 const isSavingStageUpdate = savingStageUpdateKey === `${activeRoadmap.repoName}::${stage.title}`
                 const stageChecks = normalizeStageChecks(stage.items, (stage as StageCard & { checks?: boolean[] }).checks)
                 const stageLocked = Boolean((stage as StageCard & { locked?: boolean }).locked)
-                const stageHasProgressProof = hasSavedStageProgressProof(savedStageUpdate)
                 const stageSavedProofCount = countSavedStageProgressProofItems(savedStageUpdate)
-                const stageProofCount = Math.max(
-                  stageProofStatusByRepo[activeRoadmap.repoName]?.[stage.title] || 0,
-                  getRecordValue(activeProjectPath?.stage_proof_counts, stage.title) || 0,
-                  stageSavedProofCount
-                )
-                const lastOutputLockedByProof = !canUnlockLastStageOutput(stage.items, stageProofCount)
                 const warningStageItems = warningStageItemsByRepo[activeRoadmap.repoName]?.[stage.title] || {}
                 const isVisuallyLocked = stageLocked
                 const isUnlocking = Boolean(unlockAnimationsByRepo[activeRoadmap.repoName]?.[stage.title])
@@ -4564,31 +4530,20 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                         <div className="mt-3">
                           <div className="flex items-start justify-between gap-3">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">Task Requirement</p>
-                            {!adminView && stageHasProgressProof ? (
-                              <p className="max-w-[220px] text-right text-[10px] font-semibold text-[#9a3412]">
-                                Checked outputs are locked while progress proof exists.
-                              </p>
-                            ) : !adminView && lastOutputLockedByProof ? (
-                              <p className="max-w-[220px] text-right text-[10px] font-semibold text-[#9a3412]">
-                                Save a progress proof first.
+                            {!adminView && stageSavedProofCount > 0 ? (
+                              <p className="max-w-[220px] text-right text-[10px] font-semibold text-[#166534]">
+                                You may still update the checklist; saved proof remains in the archive.
                               </p>
                             ) : null}
                           </div>
                           <ul className="mt-2 space-y-1.5">
                             {stage.items.map((item, itemIndex) => {
-                              const isLastOutput = itemIndex === stage.items.length - 1
-                              const outputLockedByProof =
-                                !adminView &&
-                                !stageLocked &&
-                                isLastOutput &&
-                                !stageChecks[itemIndex] &&
-                                lastOutputLockedByProof
                               const showWarningShake = Boolean(warningStageItems[itemIndex])
                               return (
                               <li key={`${stage.title}-${itemIndex}-${item}`}>
                                 <label
                                   className={`flex w-full items-start gap-2 rounded-[8px] px-2 py-1 text-left text-[13px] leading-5 transition ${
-                                    adminView || stageLocked || stageBusy || outputLockedByProof
+                                    adminView || stageLocked || stageBusy
                                       ? "cursor-default"
                                       : "cursor-pointer hover:bg-[#f8fafc]"
                                   } ${stageChecks[itemIndex] ? "text-[#166534]" : "text-[#374151]"} ${showWarningShake ? "stage-output-warning-shake" : ""}`}
@@ -4596,18 +4551,11 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                                   <input
                                     type="checkbox"
                                     checked={Boolean(stageChecks[itemIndex] || isStageDoneLike(stage.status))}
-                                    disabled={adminView || stageLocked || stageBusy || outputLockedByProof}
+                                    disabled={adminView || stageLocked || stageBusy}
                                     onChange={() => {
                                       if (stageLocked) {
                                         triggerStageItemWarning(activeRoadmap.repoName, stage.title, itemIndex)
                                         setProjectPathError("Finish the earlier stage first before working on this locked output.")
-                                        return
-                                      }
-                                      if (outputLockedByProof) {
-                                        triggerStageItemWarning(activeRoadmap.repoName, stage.title, itemIndex)
-                                        setProjectPathError(
-                                          "Finish this stage first and save a progress proof before unlocking the last output."
-                                        )
                                         return
                                       }
                                       void toggleStageItem(
@@ -4615,8 +4563,7 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                                         stage.title,
                                         stage.items,
                                         itemIndex,
-                                        stageLocked,
-                                        !adminView && stageHasProgressProof && stageChecks[itemIndex]
+                                        stageLocked
                                       )
                                     }}
                                     className="mt-[2px] h-4 w-4 shrink-0 accent-[#16a34a]"
@@ -4626,11 +4573,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                                     {item}
                                   </span>
                                 </label>
-                                {outputLockedByProof ? (
-                                  <p className="pl-8 pr-2 text-[10px] font-medium text-[#b45309]">
-                                    Save a progress proof first.
-                                  </p>
-                                ) : null}
                               </li>
                               )
                             })}
