@@ -2642,99 +2642,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
     }
   }
 
-  async function removeSavedStageProgressProof(
-    repoName: string,
-    stageTitle: string,
-    proofUrl?: string | null,
-    entryId?: string | null
-  ) {
-    const cleanProofUrl = String(proofUrl || "").trim()
-    if (adminView || !auth.token || !cleanProofUrl) return
-    const deleteKey = `${repoName}::${stageTitle}::proof::${cleanProofUrl}`
-    setProjectPathError("")
-    setDeletingProgressUpdateKey(deleteKey)
-    try {
-      const currentUpdate = getCurrentStageUpdate(repoName, stageTitle)
-      const currentEntries = normalizeStageProgressEntries(currentUpdate)
-      const optimisticEntries = currentEntries
-        .map((entry) => {
-          const shouldUpdateEntry = entryId ? entry.entry_id === entryId : (entry.proof_items || []).some((item) => String(item.url || "").trim() === cleanProofUrl)
-          if (!shouldUpdateEntry) return entry
-          const nextProofItems = (entry.proof_items || []).filter((item) => String(item.url || "").trim() !== cleanProofUrl)
-          return { ...entry, proof_items: nextProofItems, updated_at: new Date().toISOString() }
-        })
-        .filter((entry) => entry.comment || (entry.proof_items || []).length)
-      const optimisticLatestEntry = optimisticEntries[optimisticEntries.length - 1] || null
-      const optimisticSelectedEntry =
-        optimisticEntries.find((entry) => entry.entry_id === entryId) || optimisticLatestEntry
-      const optimisticUpdate = {
-        ...(currentUpdate || {}),
-        comment: optimisticLatestEntry?.comment || null,
-        proof_items: optimisticLatestEntry?.proof_items || [],
-        progress_entries: optimisticEntries,
-        updated_at: new Date().toISOString(),
-      }
-      protectStageUpdate(repoName, stageTitle, optimisticUpdate)
-      patchProjectPathStageUpdate(repoName, stageTitle, (current) => ({
-        ...current,
-        ...optimisticUpdate,
-      }))
-      setProofViewer((prev) =>
-        prev && prev.repoName === repoName && prev.stageTitle === stageTitle
-          ? optimisticSelectedEntry
-            ? {
-                ...prev,
-                selectedEntryId: optimisticSelectedEntry.entry_id,
-                progressEntries: optimisticEntries,
-                comment: optimisticSelectedEntry.comment || null,
-                proofItems: optimisticSelectedEntry.proof_items || [],
-                updatedAt: optimisticSelectedEntry.updated_at || null,
-              }
-            : null
-          : prev
-      )
-      const updated = await deleteProjectStageProgressUpdate(auth.token, {
-        repo_name: repoName,
-        stage_title: stageTitle,
-        entry_id: entryId || undefined,
-        proof_url: cleanProofUrl,
-      })
-      if (updated && typeof updated === "object") {
-        protectStageUpdate(repoName, stageTitle, updated as Record<string, unknown>)
-        patchProjectPathStageUpdate(repoName, stageTitle, (current) => ({
-          ...current,
-          ...(updated as Record<string, unknown>),
-        }))
-      }
-      const nextEntries = normalizeStageProgressEntries(updated as Record<string, unknown>)
-      const nextSelectedEntry =
-        nextEntries.find((entry) => entry.entry_id === entryId) || nextEntries[nextEntries.length - 1] || null
-      setProofViewer((prev) =>
-        prev && prev.repoName === repoName && prev.stageTitle === stageTitle
-          ? nextSelectedEntry
-            ? {
-                ...prev,
-                selectedEntryId: nextSelectedEntry.entry_id,
-                progressEntries: nextEntries,
-                comment: nextSelectedEntry.comment || null,
-                proofItems: nextSelectedEntry.proof_items || [],
-                updatedAt: nextSelectedEntry.updated_at || null,
-              }
-            : null
-          : prev
-      )
-      const ownerUsername = portfolio?.profile?.username || auth.username
-      if (ownerUsername) {
-        const refreshed = await fetchProjectLearningPaths(ownerUsername)
-        applyProjectPaths(refreshed)
-      }
-    } catch (err) {
-      setProjectPathError(err instanceof Error ? err.message : "Progress proof could not be deleted right now.")
-    } finally {
-      setDeletingProgressUpdateKey("")
-    }
-  }
-
   async function deleteAdminProofComment(
     repoName: string,
     stageTitle: string,
@@ -5320,7 +5227,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                       ) : null}
                       {activeProofItems.map((item, index) => {
                         const itemName = item.name || `Proof ${index + 1}`
-                        const proofDeleteKey = `${proofViewer.repoName}::${proofViewer.stageTitle}::proof::${String(item.url || "").trim()}`
                         return (
                           <article key={`${item.url}-${index}`} className="rounded-[14px] border border-[#e5e7eb] bg-white px-4 py-3">
                             <div className="flex items-start justify-between gap-3">
@@ -5338,23 +5244,6 @@ export default function LearningPathsPage({ adminView = false, adminUsername, em
                                 >
                                   Open link
                                 </button>
-                                {!adminView ? (
-                                  <button
-                                    type="button"
-                                    disabled={deletingProgressUpdateKey === proofDeleteKey}
-                                    onClick={() =>
-                                      void removeSavedStageProgressProof(
-                                        proofViewer.repoName,
-                                        proofViewer.stageTitle,
-                                        item.url,
-                                        selectedEntry?.entry_id || undefined
-                                      )
-                                    }
-                                    className="rounded-full border border-[#fecaca] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#b42318] disabled:opacity-60"
-                                  >
-                                    {deletingProgressUpdateKey === proofDeleteKey ? "Deleting..." : "Delete"}
-                                  </button>
-                                ) : null}
                               </div>
                             </div>
                           </article>
