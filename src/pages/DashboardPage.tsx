@@ -5,7 +5,6 @@ import {
   claimBadges,
   fetchOwnerPortfolio,
   getStoredAuth,
-  recomputeInsights,
 } from "../lib/api"
 import { cinematicStagger, softFloat } from "../lib/motion"
 import type {
@@ -50,7 +49,6 @@ export default function DashboardPage() {
 
   const [data, setData] = useState<PortfolioResponse | null>(null)
   const [claimLoading, setClaimLoading] = useState(false)
-  const [recomputeLoading, setRecomputeLoading] = useState(false)
   const [toast, setToast] = useState("")
   const [levelUp, setLevelUp] = useState<{ level: number; xp: number } | null>(null)
 
@@ -257,27 +255,6 @@ export default function DashboardPage() {
               <p className="max-w-[240px] text-left text-[12px] text-[#5B5F7A] lg:text-right">
                 {nextStepHint}
               </p>
-              <button
-                type="button"
-                disabled={recomputeLoading}
-                className="rounded-full border border-[#cfd6ff] bg-white/90 px-4 py-2 text-[11px] font-semibold text-[#3b3a70] shadow-sm transition hover:bg-white disabled:cursor-wait disabled:opacity-60"
-                onClick={async () => {
-                  if (!auth.token || recomputeLoading) return
-                  setRecomputeLoading(true)
-                  setToast("")
-                  try {
-                    const updated = await recomputeInsights(auth.token)
-                    setData((prev) => ({ ...updated, settings: prev?.settings || {} }))
-                    setToast("AI recommendations updated from your latest GitHub data.")
-                  } catch (error) {
-                    setToast(error instanceof Error ? error.message : "Unable to update AI recommendations.")
-                  } finally {
-                    setRecomputeLoading(false)
-                  }
-                }}
-              >
-                {recomputeLoading ? "Updating recommendations..." : "Refresh AI recommendations"}
-              </button>
             </div>
           </div>
           <div className="mt-5">
