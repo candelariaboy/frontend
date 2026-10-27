@@ -106,7 +106,7 @@ export default function LeaderboardRow({ entry, rank }: LeaderboardRowProps) {
         </div>
         <img src={entry.avatarUrl} alt={entry.username} className="h-12 w-12 rounded-2xl" />
         <div>
-          <p className="font-semibold">{entry.username}</p>
+          <p className="font-semibold text-[#111827]">{entry.username}</p>
           <p className="text-xs text-ink/60">
             {academicMeta || "Program and year level not set"}
           </p>
